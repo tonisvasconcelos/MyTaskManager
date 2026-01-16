@@ -21,6 +21,8 @@ export function createApp(): Express {
           'http://localhost:5173',
           'http://localhost:5174',
           'http://localhost:5175',
+          // GitHub Pages (this repo)
+          'https://tonisvasconcelos.github.io',
         ];
         const envOrigins = (process.env.CORS_ORIGINS || '')
           .split(',')
@@ -34,6 +36,11 @@ export function createApp(): Express {
         }
 
         if (allowed.includes(origin)) {
+          return callback(null, true);
+        }
+
+        // Allow GitHub Pages origins in general (optional convenience for MVP)
+        if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(origin)) {
           return callback(null, true);
         }
 

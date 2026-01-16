@@ -30,8 +30,8 @@ export function useUploadAttachments() {
 export function useDeleteAttachment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ attachmentId, taskId }: { attachmentId: string; taskId: string }) =>
-      apiClient.delete(`/attachments/${attachmentId}`),
+    mutationFn: (vars: { attachmentId: string; taskId: string }) =>
+      apiClient.delete(`/attachments/${vars.attachmentId}`),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId, 'attachments'] })
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId] })

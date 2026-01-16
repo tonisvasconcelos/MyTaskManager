@@ -1,4 +1,4 @@
-import type { ApiError, PaginationResult } from '../types/api'
+import type { ApiError } from '../types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
@@ -41,10 +41,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const apiClient = {
-  async get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
+  async get<T>(path: string, params?: unknown): Promise<T> {
     const url = new URL(`${API_BASE_URL}${path}`)
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
+    if (params && typeof params === 'object') {
+      Object.entries(params as Record<string, unknown>).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           url.searchParams.append(key, String(value))
         }

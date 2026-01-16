@@ -54,7 +54,8 @@ export function ProjectDetailPage() {
 
   const createMutation = useCreateTask()
   const updateMutation = useUpdateTask()
-  const deleteMutation = useDeleteTask()
+  // Delete is handled from TaskDetailModal for MVP.
+  useDeleteTask()
 
   const {
     register,

@@ -2,6 +2,31 @@ import type { ApiError } from '../types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
+const TENANT_STORAGE_KEY = 'resource-mgmt.tenant'
+
+export function getTenantSlug(): string {
+  // Allow build-time default for hosted environments (GitHub Pages, etc.)
+  const defaultTenant = import.meta.env.VITE_TENANT_ID || ''
+
+  const stored = localStorage.getItem(TENANT_STORAGE_KEY)
+  if (stored && stored.trim().length > 0) return stored.trim()
+
+  if (defaultTenant.trim().length > 0) return defaultTenant.trim()
+
+  // Reasonable default: hostname-based (github.io -> username)
+  const host = window.location.hostname
+  if (host.endsWith('.github.io')) {
+    const slug = host.replace('.github.io', '')
+    if (slug) return slug
+  }
+
+  return 'empty'
+}
+
+export function setTenantSlug(slug: string) {
+  localStorage.setItem(TENANT_STORAGE_KEY, slug.trim())
+}
+
 export class ApiClientError extends Error {
   constructor(
     public code: string,
@@ -55,6 +80,7 @@ export const apiClient = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'X-Tenant-Id': getTenantSlug(),
       },
     })
 
@@ -66,6 +92,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Tenant-Id': getTenantSlug(),
       },
       body: data ? JSON.stringify(data) : undefined,
     })
@@ -78,6 +105,7 @@ export const apiClient = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'X-Tenant-Id': getTenantSlug(),
       },
       body: data ? JSON.stringify(data) : undefined,
     })
@@ -90,6 +118,7 @@ export const apiClient = {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'X-Tenant-Id': getTenantSlug(),
       },
     })
 
@@ -99,6 +128,9 @@ export const apiClient = {
   async upload<T>(path: string, formData: FormData): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
+      headers: {
+        'X-Tenant-Id': getTenantSlug(),
+      },
       body: formData,
     })
 

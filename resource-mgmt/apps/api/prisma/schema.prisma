@@ -10,6 +10,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Tenant {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies Company[]
+  projects  Project[]
+  users     User[]
+  tasks     Task[]
+  timeEntries TimeEntry[]
+
+  @@index([slug])
+}
+
 enum ProjectStatus {
   Planned
   Active
@@ -39,6 +55,7 @@ enum UserRole {
 
 model Company {
   id        String   @id @default(uuid())
+  tenantId  String
   name      String
   email     String?
   phone     String?
@@ -48,13 +65,16 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   projects Project[]
 
-  @@index([name])
+  @@index([tenantId])
+  @@index([tenantId, name])
 }
 
 model Project {
   id            String        @id @default(uuid())
+  tenantId     String
   companyId    String
   name         String
   description  String?       @db.Text
@@ -64,29 +84,35 @@ model Project {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   tasks   Task[]
 
-  @@index([companyId])
-  @@index([status])
+  @@index([tenantId])
+  @@index([tenantId, companyId])
+  @@index([tenantId, status])
 }
 
 model User {
   id        String    @id @default(uuid())
+  tenantId  String
   fullName  String
   email     String?
   role      UserRole?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assignedTasks Task[]
   timeEntries   TimeEntry[]
 
-  @@index([email])
+  @@index([tenantId])
+  @@index([tenantId, email])
 }
 
 model Task {
   id                String       @id @default(uuid())
+  tenantId          String
   projectId         String
   title             String
   description       String?      @db.Text
@@ -99,14 +125,16 @@ model Task {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignee    User?            @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   attachments TaskAttachment[]
   timeEntries TimeEntry[]
 
-  @@index([status])
-  @@index([assigneeId])
-  @@index([projectId])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, assigneeId])
+  @@index([tenantId, projectId])
 }
 
 model TaskAttachment {
@@ -126,6 +154,7 @@ model TaskAttachment {
 
 model TimeEntry {
   id        String   @id @default(uuid())
+  tenantId  String
   taskId    String
   userId    String
   entryDate DateTime @db.Date
@@ -134,9 +163,11 @@ model TimeEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, entryDate])
-  @@index([taskId])
+  @@index([tenantId])
+  @@index([tenantId, userId, entryDate])
+  @@index([tenantId, taskId])
 }

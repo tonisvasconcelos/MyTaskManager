@@ -2,11 +2,12 @@ import prisma from '../lib/prisma.js';
 import type { TimeEntry, Prisma } from '@prisma/client';
 
 export async function findTimeEntries(
+  tenantId: string,
   userId?: string,
   from?: string,
   to?: string
 ): Promise<TimeEntry[]> {
-  const where: Prisma.TimeEntryWhereInput = {};
+  const where: Prisma.TimeEntryWhereInput = { tenantId };
   
   if (userId) {
     where.userId = userId;
@@ -52,6 +53,7 @@ export async function findTimeEntries(
 }
 
 export async function getTimesheetSummary(
+  tenantId: string,
   userId?: string,
   from?: string,
   to?: string
@@ -61,7 +63,7 @@ export async function getTimesheetSummary(
   totalsPerProject: Record<string, number>;
   totalsPerTask: Record<string, number>;
 }> {
-  const entries = await findTimeEntries(userId, from, to);
+  const entries = await findTimeEntries(tenantId, userId, from, to);
 
   const totalsPerDay: Record<string, number> = {};
   const totalsPerProject: Record<string, number> = {};
@@ -104,9 +106,25 @@ export async function findTimeEntryById(id: string): Promise<TimeEntry | null> {
   });
 }
 
-export async function createTimeEntry(data: Prisma.TimeEntryCreateInput): Promise<TimeEntry> {
+export async function findTimeEntryByIdForTenant(tenantId: string, id: string): Promise<TimeEntry | null> {
+  return prisma.timeEntry.findFirst({
+    where: { id, tenantId },
+    include: {
+      task: { include: { project: true } },
+      user: true,
+    },
+  });
+}
+
+export async function createTimeEntry(
+  tenantId: string,
+  data: Omit<Prisma.TimeEntryCreateInput, 'tenant'>
+): Promise<TimeEntry> {
   return prisma.timeEntry.create({
-    data,
+    data: {
+      ...data,
+      tenant: { connect: { id: tenantId } },
+    },
     include: {
       task: {
         include: {

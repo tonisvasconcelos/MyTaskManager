@@ -8,6 +8,7 @@ import { usersRouter } from './routes/users.js';
 import { tasksRouter } from './routes/tasks.js';
 import { attachmentsRouter } from './routes/attachments.js';
 import { timesheetRouter } from './routes/timesheet.js';
+import { requireTenant } from './middlewares/tenant.js';
 
 export function createApp(): Express {
   const app = express();
@@ -64,6 +65,8 @@ export function createApp(): Express {
   });
 
   // API routes
+  // All v1 API routes are tenant-scoped (X-Tenant-Id header)
+  app.use('/api', requireTenant);
   app.use('/api/companies', companiesRouter);
   app.use('/api/projects', projectsRouter);
   app.use('/api/users', usersRouter);

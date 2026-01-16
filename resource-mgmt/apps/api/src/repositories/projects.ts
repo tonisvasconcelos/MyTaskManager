@@ -3,6 +3,7 @@ import { parsePagination } from '../lib/pagination.js';
 import type { Project, Prisma, ProjectStatus } from '@prisma/client';
 
 export async function findProjects(
+  tenantId: string,
   query: Record<string, string | undefined>
 ): Promise<{ data: Project[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize, skip, take } = parsePagination(query);
@@ -11,6 +12,7 @@ export async function findProjects(
   const status = query.status as ProjectStatus | undefined;
 
   const where: Prisma.ProjectWhereInput = {
+    tenantId,
     ...(search && {
       OR: [
         { name: { contains: search, mode: 'insensitive' } },
@@ -42,9 +44,9 @@ export async function findProjects(
   return { data, total, page, pageSize };
 }
 
-export async function findProjectById(id: string): Promise<Project | null> {
-  return prisma.project.findUnique({
-    where: { id },
+export async function findProjectByIdForTenant(tenantId: string, id: string): Promise<Project | null> {
+  return prisma.project.findFirst({
+    where: { id, tenantId },
     include: {
       company: true,
       tasks: {
@@ -62,8 +64,16 @@ export async function findProjectById(id: string): Promise<Project | null> {
   });
 }
 
-export async function createProject(data: Prisma.ProjectCreateInput): Promise<Project> {
-  return prisma.project.create({ data });
+export async function createProject(
+  tenantId: string,
+  data: Omit<Prisma.ProjectCreateInput, 'tenant'>
+): Promise<Project> {
+  return prisma.project.create({
+    data: {
+      ...data,
+      tenant: { connect: { id: tenantId } },
+    },
+  });
 }
 
 export async function updateProject(id: string, data: Prisma.ProjectUpdateInput): Promise<Project> {
@@ -74,7 +84,7 @@ export async function deleteProject(id: string): Promise<Project> {
   return prisma.project.delete({ where: { id } });
 }
 
-export async function projectHasTasks(id: string): Promise<boolean> {
-  const count = await prisma.task.count({ where: { projectId: id } });
+export async function projectHasTasks(tenantId: string, id: string): Promise<boolean> {
+  const count = await prisma.task.count({ where: { tenantId, projectId: id } });
   return count > 0;
 }

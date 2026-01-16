@@ -5,7 +5,11 @@ import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getCompanies(req: Request, res: Response, next: NextFunction) {
   try {
-    const { data, total, page, pageSize } = await companyRepo.findCompanies(req.query as Record<string, string | undefined>);
+    const tenantId = req.tenantId!;
+    const { data, total, page, pageSize } = await companyRepo.findCompanies(
+      tenantId,
+      req.query as Record<string, string | undefined>
+    );
     const result = createPaginationResult(data, total, page, pageSize);
     res.json(result);
   } catch (error) {
@@ -16,7 +20,8 @@ export async function getCompanies(req: Request, res: Response, next: NextFuncti
 export async function getCompany(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const company = await companyRepo.findCompanyById(id);
+    const tenantId = req.tenantId!;
+    const company = await companyRepo.findCompanyByIdForTenant(tenantId, id);
     if (!company) {
       throw new NotFoundError('Company', id);
     }
@@ -28,12 +33,13 @@ export async function getCompany(req: Request, res: Response, next: NextFunction
 
 export async function createCompany(req: Request, res: Response, next: NextFunction) {
   try {
+    const tenantId = req.tenantId!;
     const data = req.body;
     // Normalize empty strings to null
     if (data.email === '') data.email = null;
     if (data.website === '') data.website = null;
     
-    const company = await companyRepo.createCompany(data);
+    const company = await companyRepo.createCompany(tenantId, data);
     res.status(201).json(company);
   } catch (error) {
     next(error);
@@ -43,13 +49,14 @@ export async function createCompany(req: Request, res: Response, next: NextFunct
 export async function updateCompany(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
+    const tenantId = req.tenantId!;
     const data = req.body;
     
     // Normalize empty strings to null
     if (data.email === '') data.email = null;
     if (data.website === '') data.website = null;
     
-    const company = await companyRepo.findCompanyById(id);
+    const company = await companyRepo.findCompanyByIdForTenant(tenantId, id);
     if (!company) {
       throw new NotFoundError('Company', id);
     }
@@ -64,12 +71,13 @@ export async function updateCompany(req: Request, res: Response, next: NextFunct
 export async function deleteCompany(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const company = await companyRepo.findCompanyById(id);
+    const tenantId = req.tenantId!;
+    const company = await companyRepo.findCompanyByIdForTenant(tenantId, id);
     if (!company) {
       throw new NotFoundError('Company', id);
     }
     
-    const hasProjects = await companyRepo.companyHasProjects(id);
+    const hasProjects = await companyRepo.companyHasProjects(tenantId, id);
     if (hasProjects) {
       throw new ConflictError('Cannot delete company with associated projects');
     }

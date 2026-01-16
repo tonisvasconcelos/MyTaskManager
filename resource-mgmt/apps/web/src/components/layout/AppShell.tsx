@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { getTenantSlug, setTenantSlug } from '../../shared/api/client'
 
 interface AppShellProps {
   children: ReactNode
@@ -15,6 +16,7 @@ const navItems = [
 
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation()
+  const tenant = getTenantSlug()
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -43,6 +45,24 @@ export function AppShell({ children }: AppShellProps) {
             )
           })}
         </nav>
+
+        <div className="mt-8 pt-6 border-t border-border">
+          <div className="text-xs text-text-secondary mb-2">Tenant</div>
+          <input
+            className="input w-full text-sm"
+            defaultValue={tenant}
+            onBlur={(e) => {
+              const next = e.target.value.trim()
+              if (next && next !== tenant) {
+                setTenantSlug(next)
+                window.location.reload()
+              }
+            }}
+          />
+          <p className="text-xs text-text-muted mt-2">
+            Change tenant and reload (isolated data).
+          </p>
+        </div>
       </aside>
 
       {/* Main content */}

@@ -6,10 +6,28 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Ensure demo tenant exists (seed data always goes into this tenant)
+  const demoTenant = await prisma.tenant.upsert({
+    where: { slug: 'demo' },
+    create: { slug: 'demo', name: 'Demo Tenant', updatedAt: new Date() },
+    update: { updatedAt: new Date() },
+  });
+
+  // Make seed idempotent: wipe demo tenant data then recreate
+  await prisma.timeEntry.deleteMany({ where: { tenantId: demoTenant.id } });
+  await prisma.taskAttachment.deleteMany({
+    where: { task: { tenantId: demoTenant.id } },
+  });
+  await prisma.task.deleteMany({ where: { tenantId: demoTenant.id } });
+  await prisma.project.deleteMany({ where: { tenantId: demoTenant.id } });
+  await prisma.company.deleteMany({ where: { tenantId: demoTenant.id } });
+  await prisma.user.deleteMany({ where: { tenantId: demoTenant.id } });
+
   // Create Users
   const users = await Promise.all([
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'John Doe',
         email: 'john.doe@example.com',
         role: UserRole.Admin,
@@ -17,6 +35,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'Jane Smith',
         email: 'jane.smith@example.com',
         role: UserRole.Manager,
@@ -24,6 +43,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'Bob Johnson',
         email: 'bob.johnson@example.com',
         role: UserRole.Contributor,
@@ -31,6 +51,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'Alice Williams',
         email: 'alice.williams@example.com',
         role: UserRole.Contributor,
@@ -38,6 +59,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'Charlie Brown',
         email: 'charlie.brown@example.com',
         role: UserRole.Contributor,
@@ -45,6 +67,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        tenantId: demoTenant.id,
         fullName: 'Diana Prince',
         email: 'diana.prince@example.com',
         role: UserRole.Manager,
@@ -58,6 +81,7 @@ async function main() {
   const companies = await Promise.all([
     prisma.company.create({
       data: {
+        tenantId: demoTenant.id,
         name: 'Acme Corporation',
         email: 'contact@acme.com',
         phone: '+1-555-0101',
@@ -68,6 +92,7 @@ async function main() {
     }),
     prisma.company.create({
       data: {
+        tenantId: demoTenant.id,
         name: 'TechStart Inc',
         email: 'hello@techstart.io',
         phone: '+1-555-0202',
@@ -78,6 +103,7 @@ async function main() {
     }),
     prisma.company.create({
       data: {
+        tenantId: demoTenant.id,
         name: 'Global Solutions Ltd',
         email: 'info@globalsolutions.com',
         phone: '+1-555-0303',
@@ -87,6 +113,7 @@ async function main() {
     }),
     prisma.company.create({
       data: {
+        tenantId: demoTenant.id,
         name: 'Digital Ventures',
         email: 'contact@digitalventures.com',
         phone: '+1-555-0404',
@@ -117,6 +144,7 @@ async function main() {
   for (const data of projectData) {
     const project = await prisma.project.create({
       data: {
+        tenantId: demoTenant.id,
         companyId: data.company.id,
         name: data.name,
         description: `Project description for ${data.name}`,
@@ -163,6 +191,7 @@ async function main() {
   for (const template of taskTemplates) {
     const task = await prisma.task.create({
       data: {
+        tenantId: demoTenant.id,
         projectId: template.project.id,
         title: template.title,
         description: `Task description for ${template.title}`,
@@ -220,6 +249,7 @@ async function main() {
 
       const timeEntry = await prisma.timeEntry.create({
         data: {
+          tenantId: demoTenant.id,
           taskId: task.id,
           userId: user.id,
           entryDate: entryDate,

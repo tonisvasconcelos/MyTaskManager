@@ -23,7 +23,8 @@ export const uploadAttachments = [
       }
 
       // Verify task exists
-      const task = await taskRepo.findTaskById(taskId);
+      const tenantId = req.tenantId!;
+      const task = await taskRepo.findTaskByIdForTenant(tenantId, taskId);
       if (!task) {
         throw new NotFoundError('Task', taskId);
       }
@@ -55,7 +56,8 @@ export const uploadAttachments = [
 export async function getAttachments(req: Request, res: Response, next: NextFunction) {
   try {
     const { id: taskId } = req.params;
-    const task = await taskRepo.findTaskById(taskId);
+    const tenantId = req.tenantId!;
+    const task = await taskRepo.findTaskByIdForTenant(tenantId, taskId);
     if (!task) {
       throw new NotFoundError('Task', taskId);
     }

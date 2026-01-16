@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 
 export async function getTimesheet(req: Request, res: Response, next: NextFunction) {
   try {
+    const tenantId = req.tenantId!;
     const { userId, from, to } = req.query;
 
     // Validate date format if provided
@@ -15,6 +16,7 @@ export async function getTimesheet(req: Request, res: Response, next: NextFuncti
     }
 
     const summary = await timesheetRepo.getTimesheetSummary(
+      tenantId,
       userId as string | undefined,
       from as string | undefined,
       to as string | undefined
@@ -29,7 +31,8 @@ export async function getTimesheet(req: Request, res: Response, next: NextFuncti
 export async function getTimeEntry(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const timeEntry = await timesheetRepo.findTimeEntryById(id);
+    const tenantId = req.tenantId!;
+    const timeEntry = await timesheetRepo.findTimeEntryByIdForTenant(tenantId, id);
     if (!timeEntry) {
       throw new NotFoundError('Time entry', id);
     }
@@ -41,6 +44,7 @@ export async function getTimeEntry(req: Request, res: Response, next: NextFuncti
 
 export async function createTimeEntry(req: Request, res: Response, next: NextFunction) {
   try {
+    const tenantId = req.tenantId!;
     const data = req.body;
     
     // Validate hours
@@ -57,7 +61,7 @@ export async function createTimeEntry(req: Request, res: Response, next: NextFun
       throw new ValidationError('Invalid entry date');
     }
 
-    const timeEntry = await timesheetRepo.createTimeEntry({
+    const timeEntry = await timesheetRepo.createTimeEntry(tenantId, {
       task: { connect: { id: data.taskId } },
       user: { connect: { id: data.userId } },
       entryDate,
@@ -74,9 +78,10 @@ export async function createTimeEntry(req: Request, res: Response, next: NextFun
 export async function updateTimeEntry(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
+    const tenantId = req.tenantId!;
     const data = req.body;
 
-    const timeEntry = await timesheetRepo.findTimeEntryById(id);
+    const timeEntry = await timesheetRepo.findTimeEntryByIdForTenant(tenantId, id);
     if (!timeEntry) {
       throw new NotFoundError('Time entry', id);
     }
@@ -118,7 +123,8 @@ export async function updateTimeEntry(req: Request, res: Response, next: NextFun
 export async function deleteTimeEntry(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const timeEntry = await timesheetRepo.findTimeEntryById(id);
+    const tenantId = req.tenantId!;
+    const timeEntry = await timesheetRepo.findTimeEntryByIdForTenant(tenantId, id);
     if (!timeEntry) {
       throw new NotFoundError('Time entry', id);
     }

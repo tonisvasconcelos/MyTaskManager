@@ -5,7 +5,11 @@ import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getTasks(req: Request, res: Response, next: NextFunction) {
   try {
-    const { data, total, page, pageSize } = await taskRepo.findTasks(req.query as Record<string, string | undefined>);
+    const tenantId = req.tenantId!;
+    const { data, total, page, pageSize } = await taskRepo.findTasks(
+      tenantId,
+      req.query as Record<string, string | undefined>
+    );
     const result = createPaginationResult(data, total, page, pageSize);
     res.json(result);
   } catch (error) {
@@ -15,7 +19,11 @@ export async function getTasks(req: Request, res: Response, next: NextFunction) 
 
 export async function getOngoingTasks(req: Request, res: Response, next: NextFunction) {
   try {
-    const { data, total, page, pageSize } = await taskRepo.findOngoingTasks(req.query as Record<string, string | undefined>);
+    const tenantId = req.tenantId!;
+    const { data, total, page, pageSize } = await taskRepo.findOngoingTasks(
+      tenantId,
+      req.query as Record<string, string | undefined>
+    );
     const result = createPaginationResult(data, total, page, pageSize);
     res.json(result);
   } catch (error) {
@@ -26,7 +34,8 @@ export async function getOngoingTasks(req: Request, res: Response, next: NextFun
 export async function getTask(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const task = await taskRepo.findTaskById(id);
+    const tenantId = req.tenantId!;
+    const task = await taskRepo.findTaskByIdForTenant(tenantId, id);
     if (!task) {
       throw new NotFoundError('Task', id);
     }
@@ -38,6 +47,7 @@ export async function getTask(req: Request, res: Response, next: NextFunction) {
 
 export async function createTask(req: Request, res: Response, next: NextFunction) {
   try {
+    const tenantId = req.tenantId!;
     const data = req.body;
     // Convert date strings to Date objects
     if (data.startDate && data.startDate !== '') {
@@ -53,7 +63,7 @@ export async function createTask(req: Request, res: Response, next: NextFunction
     // Normalize empty strings to null
     if (data.assigneeId === '') data.assigneeId = null;
     
-    const task = await taskRepo.createTask(data);
+    const task = await taskRepo.createTask(tenantId, data);
     res.status(201).json(task);
   } catch (error) {
     next(error);
@@ -63,6 +73,7 @@ export async function createTask(req: Request, res: Response, next: NextFunction
 export async function updateTask(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
+    const tenantId = req.tenantId!;
     const data = req.body;
     
     // Convert date strings to Date objects
@@ -75,7 +86,7 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
     // Normalize empty strings to null
     if (data.assigneeId === '') data.assigneeId = null;
     
-    const task = await taskRepo.findTaskById(id);
+    const task = await taskRepo.findTaskByIdForTenant(tenantId, id);
     if (!task) {
       throw new NotFoundError('Task', id);
     }
@@ -90,7 +101,8 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
 export async function deleteTask(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const task = await taskRepo.findTaskById(id);
+    const tenantId = req.tenantId!;
+    const task = await taskRepo.findTaskByIdForTenant(tenantId, id);
     if (!task) {
       throw new NotFoundError('Task', id);
     }

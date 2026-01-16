@@ -4,6 +4,7 @@ import { TaskStatus } from '@prisma/client';
 import type { Task, Prisma } from '@prisma/client';
 
 export async function findTasks(
+  tenantId: string,
   query: Record<string, string | undefined>
 ): Promise<{ data: Task[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize, skip, take } = parsePagination(query);
@@ -13,6 +14,7 @@ export async function findTasks(
   const assigneeId = query.assigneeId;
 
   const where: Prisma.TaskWhereInput = {
+    tenantId,
     ...(search && {
       OR: [
         { title: { contains: search, mode: 'insensitive' } },
@@ -59,6 +61,7 @@ export async function findTasks(
 }
 
 export async function findOngoingTasks(
+  tenantId: string,
   query: Record<string, string | undefined>
 ): Promise<{ data: Task[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize, skip, take } = parsePagination(query);
@@ -70,6 +73,7 @@ export async function findOngoingTasks(
     : [TaskStatus.InProgress];
 
   const where: Prisma.TaskWhereInput = {
+    tenantId,
     status: { in: statuses },
     ...(assigneeId && { assigneeId }),
   };
@@ -111,9 +115,9 @@ export async function findOngoingTasks(
   return { data, total, page, pageSize };
 }
 
-export async function findTaskById(id: string): Promise<Task | null> {
-  return prisma.task.findUnique({
-    where: { id },
+export async function findTaskByIdForTenant(tenantId: string, id: string): Promise<Task | null> {
+  return prisma.task.findFirst({
+    where: { id, tenantId },
     include: {
       project: {
         include: {
@@ -137,8 +141,16 @@ export async function findTaskById(id: string): Promise<Task | null> {
   });
 }
 
-export async function createTask(data: Prisma.TaskCreateInput): Promise<Task> {
-  return prisma.task.create({ data });
+export async function createTask(
+  tenantId: string,
+  data: Omit<Prisma.TaskCreateInput, 'tenant'>
+): Promise<Task> {
+  return prisma.task.create({
+    data: {
+      ...data,
+      tenant: { connect: { id: tenantId } },
+    },
+  });
 }
 
 export async function updateTask(id: string, data: Prisma.TaskUpdateInput): Promise<Task> {

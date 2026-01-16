@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { HashRouter } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { AppRoutes } from './app/router'
 
@@ -15,11 +15,12 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      {/* HashRouter ensures routing works on GitHub Pages (no server-side rewrites). */}
+      <HashRouter>
         <AppShell>
           <AppRoutes />
         </AppShell>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   )
 }

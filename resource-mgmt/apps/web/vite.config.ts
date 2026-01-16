@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
+  // GitHub Pages serves from /<repo>/, so we need a non-root base in production.
+  // Vite will use this for asset URLs.
+  base: process.env.GITHUB_PAGES === 'true' ? '/MyTaskManager/' : '/',
   plugins: [react()],
   resolve: {
     alias: {

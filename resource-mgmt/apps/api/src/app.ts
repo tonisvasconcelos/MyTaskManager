@@ -15,8 +15,31 @@ export function createApp(): Express {
   // CORS
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-      credentials: true,
+      // No auth/cookies in v1 -> no credentials needed. Allow configured origins + localhost.
+      origin: (origin, callback) => {
+        const defaultOrigins = [
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:5175',
+        ];
+        const envOrigins = (process.env.CORS_ORIGINS || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const allowed = [...defaultOrigins, ...envOrigins];
+
+        // Allow same-origin / curl / server-to-server (no Origin header)
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (allowed.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+      },
+      credentials: false,
     })
   );
 

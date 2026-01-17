@@ -2,29 +2,39 @@ import type { ApiError } from '../types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
-const TENANT_STORAGE_KEY = 'resource-mgmt.tenant'
+const USER_TOKEN_KEY = 'resource-mgmt.userToken'
+const ADMIN_TOKEN_KEY = 'resource-mgmt.adminToken'
 
-export function getTenantSlug(): string {
-  // Allow build-time default for hosted environments (GitHub Pages, etc.)
-  const defaultTenant = import.meta.env.VITE_TENANT_ID || ''
-
-  const stored = localStorage.getItem(TENANT_STORAGE_KEY)
-  if (stored && stored.trim().length > 0) return stored.trim()
-
-  if (defaultTenant.trim().length > 0) return defaultTenant.trim()
-
-  // Reasonable default: hostname-based (github.io -> username)
-  const host = window.location.hostname
-  if (host.endsWith('.github.io')) {
-    const slug = host.replace('.github.io', '')
-    if (slug) return slug
-  }
-
-  return 'empty'
+export function getUserToken(): string | null {
+  return localStorage.getItem(USER_TOKEN_KEY)
 }
 
-export function setTenantSlug(slug: string) {
-  localStorage.setItem(TENANT_STORAGE_KEY, slug.trim())
+export function setUserToken(token: string) {
+  localStorage.setItem(USER_TOKEN_KEY, token)
+}
+
+export function clearUserToken() {
+  localStorage.removeItem(USER_TOKEN_KEY)
+}
+
+export function getAdminToken(): string | null {
+  return localStorage.getItem(ADMIN_TOKEN_KEY)
+}
+
+export function setAdminToken(token: string) {
+  localStorage.setItem(ADMIN_TOKEN_KEY, token)
+}
+
+export function clearAdminToken() {
+  localStorage.removeItem(ADMIN_TOKEN_KEY)
+}
+
+export function isLoggedIn(): boolean {
+  return !!getUserToken()
+}
+
+export function isAdminLoggedIn(): boolean {
+  return !!getAdminToken()
 }
 
 export class ApiClientError extends Error {
@@ -65,6 +75,17 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json()
 }
 
+function getAuthHeader(path: string): string | undefined {
+  // Admin endpoints use admin token
+  if (path.startsWith('/admin/')) {
+    const token = getAdminToken()
+    return token ? `Bearer ${token}` : undefined
+  }
+
+  const token = getUserToken()
+  return token ? `Bearer ${token}` : undefined
+}
+
 export const apiClient = {
   async get<T>(path: string, params?: unknown): Promise<T> {
     const url = new URL(`${API_BASE_URL}${path}`)
@@ -80,7 +101,7 @@ export const apiClient = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Id': getTenantSlug(),
+        ...(getAuthHeader(path) ? { Authorization: getAuthHeader(path)! } : {}),
       },
     })
 
@@ -92,7 +113,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Id': getTenantSlug(),
+        ...(getAuthHeader(path) ? { Authorization: getAuthHeader(path)! } : {}),
       },
       body: data ? JSON.stringify(data) : undefined,
     })
@@ -105,7 +126,7 @@ export const apiClient = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Id': getTenantSlug(),
+        ...(getAuthHeader(path) ? { Authorization: getAuthHeader(path)! } : {}),
       },
       body: data ? JSON.stringify(data) : undefined,
     })
@@ -118,7 +139,7 @@ export const apiClient = {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Id': getTenantSlug(),
+        ...(getAuthHeader(path) ? { Authorization: getAuthHeader(path)! } : {}),
       },
     })
 
@@ -129,7 +150,7 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
       headers: {
-        'X-Tenant-Id': getTenantSlug(),
+        ...(getAuthHeader(path) ? { Authorization: getAuthHeader(path)! } : {}),
       },
       body: formData,
     })

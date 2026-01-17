@@ -21,10 +21,9 @@ A production-quality MVP for managing IT projects, tasks, and timesheets with a 
    npm install
    ```
 
-2. **Start PostgreSQL:**
-   ```bash
-   docker-compose up -d
-   ```
+2. **Database (Neon recommended):**
+   - Create a Neon project and copy the connection string.
+   - Set it as `DATABASE_URL` in `apps/api/.env`.
 
 3. **Set up environment variables:**
    ```bash
@@ -95,6 +94,12 @@ _(Placeholder for screenshots)_
 - Uploads stored in `apps/api/uploads/` directory
 - All API endpoints are prefixed with `/api`
 - Image uploads are served statically at `/uploads/<filename>`
+- Auth:
+  - User login: `POST /api/auth/login` (tenant + email + password) returns JWT
+  - Admin login: `POST /api/admin/login` returns SuperAdmin JWT
+- Tenant licensing:
+  - `Tenant` has `planName`, `maxUsers`, `activeUntil`, `isActive`
+  - Seat limits enforced on user creation
 
 ### Frontend (apps/web)
 
@@ -104,6 +109,28 @@ _(Placeholder for screenshots)_
 - React Hook Form + Zod for form validation
 - Debounced search on list pages
 - Pagination for all list views
+
+## Deployment (GitHub Pages + Railway)
+
+### Web (GitHub Pages)
+- The web app is deployed via GitHub Actions to GitHub Pages.
+- Set GitHub Actions variable `VITE_API_URL` to your Railway API base:
+  - Example: `https://<your-service>.up.railway.app/api`
+- URL:
+  - `https://tonisvasconcelos.github.io/MyTaskManager/#/login`
+  - Admin portal: `https://tonisvasconcelos.github.io/MyTaskManager/#/admin/login`
+
+### API (Railway)
+- Deploy `resource-mgmt/apps/api`.
+- Required env vars:
+  - `DATABASE_URL` (Neon)
+  - `JWT_SECRET`
+  - `CORS_ORIGINS=https://tonisvasconcelos.github.io`
+  - `SUPER_ADMIN_EMAIL`
+  - `SUPER_ADMIN_PASSWORD`
+- Run migrations (non-interactive):
+  - `npx prisma migrate deploy`
+  - then `npx prisma generate`
 
 ## License
 

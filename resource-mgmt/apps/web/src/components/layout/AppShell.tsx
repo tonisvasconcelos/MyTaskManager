@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { clearUserToken } from '../../shared/api/client'
+import { clearAdminToken, clearUserToken, isAdminLoggedIn, isLoggedIn } from '../../shared/api/client'
 
 interface AppShellProps {
   children: ReactNode
@@ -16,6 +16,8 @@ const navItems = [
 
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation()
+  const loggedIn = isLoggedIn()
+  const adminLoggedIn = isAdminLoggedIn()
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -28,15 +30,24 @@ export function AppShell({ children }: AppShellProps) {
         <nav className="space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
+            const isDisabled = !loggedIn && item.path !== '/login'
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={loggedIn ? item.path : '/login'}
                 className={`flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                   isActive
                     ? 'bg-accent/20 text-accent border-l-2 border-accent'
-                    : 'text-text-secondary hover:bg-surface/80 hover:text-text-primary'
+                    : isDisabled
+                      ? 'text-text-secondary/50 cursor-not-allowed'
+                      : 'text-text-secondary hover:bg-surface/80 hover:text-text-primary'
                 }`}
+                onClick={(e) => {
+                  if (!loggedIn) {
+                    e.preventDefault()
+                    window.location.href = '#/login'
+                  }
+                }}
               >
                 <span>{item.icon}</span>
                 <span className="font-medium">{item.label}</span>
@@ -46,15 +57,27 @@ export function AppShell({ children }: AppShellProps) {
         </nav>
 
         <div className="mt-8 pt-6 border-t border-border">
-          <button
-            className="btn-secondary w-full"
-            onClick={() => {
-              clearUserToken()
-              window.location.href = '#/login'
-            }}
-          >
-            Sign out
-          </button>
+          {!loggedIn ? (
+            <div className="space-y-2">
+              <Link to="/login" className="btn-primary block text-center">
+                Sign in
+              </Link>
+              <Link to="/admin/login" className="btn-secondary block text-center">
+                Admin portal
+              </Link>
+            </div>
+          ) : (
+            <button
+              className="btn-secondary w-full"
+              onClick={() => {
+                clearUserToken()
+                if (adminLoggedIn) clearAdminToken()
+                window.location.href = '#/login'
+              }}
+            >
+              Sign out
+            </button>
+          )}
         </div>
       </aside>
 

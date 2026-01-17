@@ -30,8 +30,12 @@ jobs:
 
       - name: Install
         run: |
-          cd resource-mgmt
-          npm ci
+          set -euxo pipefail
+          pwd
+          ls -la
+          ls -la resource-mgmt
+          ls -la resource-mgmt/package.json resource-mgmt/package-lock.json
+          npm ci --prefix resource-mgmt
 
       - name: Build web (GitHub Pages base)
         env:
@@ -40,8 +44,8 @@ jobs:
           # (optional) e.g. https://your-api-host.example.com/api
           VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
-          cd resource-mgmt
-          npm run build --workspace=apps/web
+          set -euxo pipefail
+          npm run build --prefix resource-mgmt --workspace=apps/web
 
       - name: Add .nojekyll
         run: touch resource-mgmt/apps/web/dist/.nojekyll

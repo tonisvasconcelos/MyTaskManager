@@ -29,17 +29,19 @@ jobs:
           cache-dependency-path: resource-mgmt/package-lock.json
 
       - name: Install
-        working-directory: resource-mgmt
-        run: npm ci
+        run: |
+          cd resource-mgmt
+          npm ci
 
       - name: Build web (GitHub Pages base)
-        working-directory: resource-mgmt
         env:
           GITHUB_PAGES: "true"
           # Set this in GitHub repo Settings -> Secrets and variables -> Actions -> Variables
           # (optional) e.g. https://your-api-host.example.com/api
           VITE_API_URL: ${{ vars.VITE_API_URL }}
-        run: npm run build --workspace=apps/web
+        run: |
+          cd resource-mgmt
+          npm run build --workspace=apps/web
 
       - name: Add .nojekyll
         run: touch resource-mgmt/apps/web/dist/.nojekyll

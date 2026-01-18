@@ -1,4 +1,4 @@
-import { sign, verify, type Secret, type SignOptions } from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 import { InternalError } from './errors.js';
 
 export type JwtRole = 'Admin' | 'Manager' | 'Contributor' | 'SuperAdmin';
@@ -18,11 +18,11 @@ function getJwtSecret(): Secret {
 }
 
 export function signJwt(payload: UserJwtPayload, expiresIn: SignOptions['expiresIn'] = '8h'): string {
-  return sign(payload, getJwtSecret(), { expiresIn });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn });
 }
 
 export function verifyJwt(token: string): UserJwtPayload {
-  const decoded = verify(token, getJwtSecret());
+  const decoded = jwt.verify(token, getJwtSecret());
   return decoded as UserJwtPayload;
 }
 

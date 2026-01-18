@@ -56,18 +56,20 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <img 
-            src={logoPath}
-            alt="IT Project Company Manager System" 
-            className="mx-auto mb-4 h-16 w-auto"
-            onError={(e) => {
-              // Fallback if image fails to load
-              console.error('Failed to load logo:', logoPath);
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-          <h1 className="text-3xl font-bold text-text-primary">IT Project Company Manager System</h1>
+          <div className="mb-4 flex justify-center">
+            <img 
+              src={logoPath}
+              alt="IT Project Company Manager System" 
+              className="h-24 w-auto max-w-full"
+              onError={(e) => {
+                // Fallback if image fails to load
+                console.error('Failed to load logo:', logoPath);
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+          <h1 className="text-base font-normal text-text-primary">IT Project Company Manager System</h1>
           <p className="text-text-secondary mt-2">Sign in to your tenant</p>
         </div>
         <Card>

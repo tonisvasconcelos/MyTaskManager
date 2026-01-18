@@ -52,7 +52,12 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-text-primary">Resource Mgmt</h1>
+          <img 
+            src="/images/LogoMakr_60iQFv.png" 
+            alt="IT Project Company Manager System" 
+            className="mx-auto mb-4 h-16 w-auto"
+          />
+          <h1 className="text-3xl font-bold text-text-primary">IT Project Company Manager System</h1>
           <p className="text-text-secondary mt-2">Sign in to your tenant</p>
         </div>
         <Card>

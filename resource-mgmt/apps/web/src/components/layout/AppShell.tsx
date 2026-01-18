@@ -31,7 +31,7 @@ export function AppShell({ children }: AppShellProps) {
           <img 
             src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
             alt="iTASKORA" 
-            className="h-12 w-auto"
+            className="h-16 w-auto max-w-full"
             onError={(e) => {
               console.error('Failed to load logo:', `${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`);
               const target = e.target as HTMLImageElement;

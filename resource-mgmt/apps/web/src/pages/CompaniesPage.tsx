@@ -18,6 +18,25 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { Company } from '../shared/types/api'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+
+function getLogoUrl(logoUrl: string | null | undefined): string | null {
+  if (!logoUrl) return null
+  
+  // If already a full URL, return as-is
+  if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+    return logoUrl
+  }
+  
+  // If relative path, construct full URL
+  const baseUrl = API_BASE_URL.replace('/api', '')
+  if (logoUrl.startsWith('/uploads/')) {
+    return `${baseUrl}${logoUrl}`
+  }
+  
+  return `${baseUrl}/uploads/${logoUrl}`
+}
+
 const companySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
@@ -163,18 +182,33 @@ export function CompaniesPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 flex gap-4">
                     <div className="w-12 h-12 rounded-md overflow-hidden border border-border bg-surface flex items-center justify-center shrink-0">
-                      {company.logoUrl ? (
-                        <img
-                          src={company.logoUrl}
-                          alt={`${company.name} logo`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="text-xs text-text-tertiary">
-                          {company.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      )}
+                      {(() => {
+                        const logoUrl = getLogoUrl(company.logoUrl)
+                        return logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt={`${company.name} logo`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Fallback to initials if image fails to load
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                              const parent = target.parentElement
+                              if (parent && !parent.querySelector('span')) {
+                                const fallback = document.createElement('span')
+                                fallback.className = 'text-xs text-text-tertiary'
+                                fallback.textContent = company.name.slice(0, 2).toUpperCase()
+                                parent.appendChild(fallback)
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="text-xs text-text-tertiary">
+                            {company.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )
+                      })()}
                     </div>
 
                     <div className="flex-1">

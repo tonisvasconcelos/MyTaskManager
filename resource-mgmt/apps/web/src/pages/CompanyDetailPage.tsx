@@ -48,14 +48,25 @@ export function CompanyDetailPage() {
       <Card className="mb-8">
         <h2 className="text-xl font-semibold text-text-primary mb-4">Company Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          {company.logoUrl && (
-            <div className="md:col-span-2">
-              <span className="text-text-secondary">Logo:</span>
-              <div className="mt-2 w-24 h-24 rounded-md overflow-hidden border border-border bg-surface">
-                <img src={company.logoUrl} alt={`${company.name} logo`} className="w-full h-full object-cover" />
+          {(() => {
+            const logoUrl = getLogoUrl(company.logoUrl)
+            return logoUrl ? (
+              <div className="md:col-span-2">
+                <span className="text-text-secondary">Logo:</span>
+                <div className="mt-2 w-24 h-24 rounded-md overflow-hidden border border-border bg-surface">
+                  <img 
+                    src={logoUrl} 
+                    alt={`${company.name} logo`} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            ) : null
+          })()}
           {company.email && (
             <div>
               <span className="text-text-secondary">Email:</span>

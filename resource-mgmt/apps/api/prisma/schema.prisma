@@ -83,6 +83,7 @@ model Company {
   logoMimeType String?
   logoSize Int?
   logoUrl String?
+  logoData Bytes? // BLOB storage for logo image data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

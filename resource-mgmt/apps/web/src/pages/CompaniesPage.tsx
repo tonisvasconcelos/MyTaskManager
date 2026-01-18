@@ -20,21 +20,21 @@ import type { Company } from '../shared/types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
-function getLogoUrl(logoUrl: string | null | undefined): string | null {
-  if (!logoUrl) return null
-  
-  // If already a full URL, return as-is
-  if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-    return logoUrl
+function getLogoUrl(companyId: string, logoUrl: string | null | undefined): string | null {
+  // If logoUrl exists, it should point to the new endpoint
+  if (logoUrl) {
+    // If already a full URL, return as-is
+    if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+      return logoUrl
+    }
+    // If it's the new format, construct the URL
+    if (logoUrl.includes('/api/companies/') && logoUrl.includes('/logo')) {
+      return logoUrl.startsWith('/') ? `${API_BASE_URL.replace('/api', '')}${logoUrl}` : `${API_BASE_URL.replace('/api', '')}/${logoUrl}`
+    }
   }
   
-  // If relative path, construct full URL
-  const baseUrl = API_BASE_URL.replace('/api', '')
-  if (logoUrl.startsWith('/uploads/')) {
-    return `${baseUrl}${logoUrl}`
-  }
-  
-  return `${baseUrl}/uploads/${logoUrl}`
+  // Default: use the new endpoint format
+  return `${API_BASE_URL}/companies/${companyId}/logo`
 }
 
 const companySchema = z.object({
@@ -183,7 +183,7 @@ export function CompaniesPage() {
                   <div className="flex-1 flex gap-4">
                     <div className="w-12 h-12 rounded-md overflow-hidden border border-border bg-surface flex items-center justify-center shrink-0">
                       {(() => {
-                        const logoUrl = getLogoUrl(company.logoUrl)
+                        const logoUrl = getLogoUrl(company.id, company.logoUrl)
                         return logoUrl ? (
                           <img
                             src={logoUrl}

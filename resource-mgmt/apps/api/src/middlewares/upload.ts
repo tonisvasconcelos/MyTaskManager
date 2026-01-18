@@ -38,3 +38,12 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB max
   },
 });
+
+// Memory storage for logo uploads (to store in database)
+export const uploadLogo = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max for logos
+  },
+});

@@ -2,9 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as companyRepo from '../repositories/companies.js';
 import { NotFoundError, ConflictError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
-import { upload } from '../middlewares/upload.js';
-import fs from 'fs';
-import path from 'path';
+import { uploadLogo } from '../middlewares/upload.js';
 
 export async function getCompanies(req: Request, res: Response, next: NextFunction) {
   try {
@@ -78,7 +76,7 @@ export async function updateCompany(req: Request, res: Response, next: NextFunct
 }
 
 export const uploadCompanyLogo = [
-  upload.single('file'),
+  uploadLogo.single('file'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
@@ -90,33 +88,24 @@ export const uploadCompanyLogo = [
       }
 
       const file = req.file as Express.Multer.File | undefined;
-      if (!file) {
+      if (!file || !file.buffer) {
         res.status(400).json({
           error: { code: 'VALIDATION_ERROR', message: 'No file uploaded' },
         });
         return;
       }
 
+      // Store logo data as BLOB in database
       const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
-      const logoUrl = `${baseUrl}/uploads/${file.filename}`;
-
-      // Best-effort delete old logo file
-      const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-      if (company.logoFileName) {
-        const oldPath = path.resolve(process.cwd(), uploadDir, company.logoFileName);
-        try {
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-        } catch {
-          // ignore (keep DB update working even if file deletion fails)
-        }
-      }
+      const logoUrl = `${baseUrl}/api/companies/${id}/logo`;
 
       const updated = await companyRepo.updateCompany(id, {
-        logoFileName: file.filename,
+        logoFileName: file.originalname, // Keep original name for reference
         logoOriginalName: file.originalname,
         logoMimeType: file.mimetype,
         logoSize: file.size,
         logoUrl,
+        logoData: file.buffer, // Store image data as BLOB
       });
 
       res.json(updated);
@@ -125,6 +114,34 @@ export const uploadCompanyLogo = [
     }
   },
 ];
+
+export async function getCompanyLogo(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const tenantId = req.tenantId!;
+
+    // Fetch only logo-related fields to avoid loading unnecessary data
+    const company = await companyRepo.findCompanyLogo(tenantId, id);
+    if (!company) {
+      throw new NotFoundError('Company', id);
+    }
+
+    if (!company.logoData || !company.logoMimeType) {
+      res.status(404).json({
+        error: { code: 'NOT_FOUND', message: 'Logo not found' },
+      });
+      return;
+    }
+
+    // Set appropriate headers and send the image data
+    res.setHeader('Content-Type', company.logoMimeType);
+    res.setHeader('Content-Length', company.logoSize || company.logoData.length);
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.send(company.logoData);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function deleteCompany(req: Request, res: Response, next: NextFunction) {
   try {

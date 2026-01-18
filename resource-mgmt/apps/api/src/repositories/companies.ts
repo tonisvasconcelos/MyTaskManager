@@ -66,3 +66,15 @@ export async function companyHasProjects(tenantId: string, id: string): Promise<
   const count = await prisma.project.count({ where: { tenantId, companyId: id } });
   return count > 0;
 }
+
+export async function findCompanyLogo(tenantId: string, id: string): Promise<Pick<Company, 'logoData' | 'logoMimeType' | 'logoSize'> | null> {
+  const company = await prisma.company.findFirst({
+    where: { id, tenantId },
+    select: {
+      logoData: true,
+      logoMimeType: true,
+      logoSize: true,
+    },
+  });
+  return company;
+}

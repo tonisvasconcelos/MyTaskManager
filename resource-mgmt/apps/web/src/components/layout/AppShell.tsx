@@ -57,18 +57,17 @@ export function AppShell({ children }: AppShellProps) {
           </button>
           
           <div className="mb-8 flex items-center justify-center min-h-[80px]">
-        <div className="mb-8 flex items-center justify-center min-h-[80px]">
-          <img 
-            src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
-            alt="iTASKORA" 
-            className="h-24 w-auto max-w-full object-contain"
-            onError={(e) => {
-              console.error('Failed to load logo:', `${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`);
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-        </div>
+            <img 
+              src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
+              alt="iTASKORA" 
+              className="h-24 w-auto max-w-full object-contain"
+              onError={(e) => {
+                console.error('Failed to load logo:', `${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`);
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
         <nav className="space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path

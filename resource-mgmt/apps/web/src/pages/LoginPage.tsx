@@ -8,6 +8,9 @@ import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 
+// Logo image - using public path that works with GitHub Pages base URL
+const logoPath = `${import.meta.env.BASE_URL}images/LogoMakr_60iQFv.png`
+
 const loginSchema = z.object({
   tenant: z.string().min(2, 'Tenant is required').max(32),
   email: z.string().email('Invalid email'),
@@ -53,11 +56,12 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
           <img 
-            src={`${import.meta.env.BASE_URL}images/LogoMakr_60iQFv.png`}
+            src={logoPath}
             alt="IT Project Company Manager System" 
             className="mx-auto mb-4 h-16 w-auto"
             onError={(e) => {
               // Fallback if image fails to load
+              console.error('Failed to load logo:', logoPath);
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}

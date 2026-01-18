@@ -27,6 +27,30 @@ export async function findCompanies(
       skip,
       take,
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        tenantId: true,
+        name: true,
+        email: true,
+        phone: true,
+        website: true,
+        address: true,
+        notes: true,
+        countryCode: true,
+        invoicingCurrencyCode: true,
+        taxRegistrationNo: true,
+        billingUnit: true,
+        unitPrice: true,
+        generalNotes: true,
+        logoFileName: true,
+        logoOriginalName: true,
+        logoMimeType: true,
+        logoSize: true,
+        logoUrl: true,
+        // Exclude logoData (BLOB) from list queries for performance
+        createdAt: true,
+        updatedAt: true,
+      },
     }),
     prisma.company.count({ where }),
   ]);
@@ -39,7 +63,33 @@ export async function findCompanyById(id: string): Promise<Company | null> {
 }
 
 export async function findCompanyByIdForTenant(tenantId: string, id: string): Promise<Company | null> {
-  return prisma.company.findFirst({ where: { id, tenantId } });
+  return prisma.company.findFirst({
+    where: { id, tenantId },
+    select: {
+      id: true,
+      tenantId: true,
+      name: true,
+      email: true,
+      phone: true,
+      website: true,
+      address: true,
+      notes: true,
+      countryCode: true,
+      invoicingCurrencyCode: true,
+      taxRegistrationNo: true,
+      billingUnit: true,
+      unitPrice: true,
+      generalNotes: true,
+      logoFileName: true,
+      logoOriginalName: true,
+      logoMimeType: true,
+      logoSize: true,
+      logoUrl: true,
+      // Exclude logoData (BLOB) - use findCompanyLogo for that
+      createdAt: true,
+      updatedAt: true,
+    },
+  }) as Company | null;
 }
 
 export async function createCompany(
@@ -51,11 +101,62 @@ export async function createCompany(
       ...data,
       tenant: { connect: { id: tenantId } },
     },
-  });
+    select: {
+      id: true,
+      tenantId: true,
+      name: true,
+      email: true,
+      phone: true,
+      website: true,
+      address: true,
+      notes: true,
+      countryCode: true,
+      invoicingCurrencyCode: true,
+      taxRegistrationNo: true,
+      billingUnit: true,
+      unitPrice: true,
+      generalNotes: true,
+      logoFileName: true,
+      logoOriginalName: true,
+      logoMimeType: true,
+      logoSize: true,
+      logoUrl: true,
+      // Exclude logoData from response
+      createdAt: true,
+      updatedAt: true,
+    },
+  }) as Company;
 }
 
 export async function updateCompany(id: string, data: Prisma.CompanyUpdateInput): Promise<Company> {
-  return prisma.company.update({ where: { id }, data });
+  return prisma.company.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      tenantId: true,
+      name: true,
+      email: true,
+      phone: true,
+      website: true,
+      address: true,
+      notes: true,
+      countryCode: true,
+      invoicingCurrencyCode: true,
+      taxRegistrationNo: true,
+      billingUnit: true,
+      unitPrice: true,
+      generalNotes: true,
+      logoFileName: true,
+      logoOriginalName: true,
+      logoMimeType: true,
+      logoSize: true,
+      logoUrl: true,
+      // Exclude logoData from response
+      createdAt: true,
+      updatedAt: true,
+    },
+  }) as Company;
 }
 
 export async function deleteCompany(id: string): Promise<Company> {

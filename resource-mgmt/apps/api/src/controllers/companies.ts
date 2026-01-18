@@ -95,20 +95,46 @@ export const uploadCompanyLogo = [
         return;
       }
 
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'File size exceeds 5MB limit' },
+        });
+        return;
+      }
+
       // Store logo data as BLOB in database
       const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
       const logoUrl = `${baseUrl}/api/companies/${id}/logo`;
 
-      const updated = await companyRepo.updateCompany(id, {
-        logoFileName: file.originalname, // Keep original name for reference
-        logoOriginalName: file.originalname,
-        logoMimeType: file.mimetype,
-        logoSize: file.size,
-        logoUrl,
-        logoData: file.buffer, // Store image data as BLOB
-      });
+      try {
+        const updated = await companyRepo.updateCompany(id, {
+          logoFileName: file.originalname, // Keep original name for reference
+          logoOriginalName: file.originalname,
+          logoMimeType: file.mimetype,
+          logoSize: file.size,
+          logoUrl,
+          logoData: file.buffer, // Store image data as BLOB
+        });
 
-      res.json(updated);
+        res.json(updated);
+      } catch (dbError: any) {
+        // If logoData column doesn't exist yet (migration not applied), fall back gracefully
+        if (dbError.message?.includes('logoData') || dbError.code === 'P2021') {
+          console.warn('logoData column not found, migration may not be applied yet');
+          // Still update metadata, but skip logoData
+          const updated = await companyRepo.updateCompany(id, {
+            logoFileName: file.originalname,
+            logoOriginalName: file.originalname,
+            logoMimeType: file.mimetype,
+            logoSize: file.size,
+            logoUrl: null, // Can't serve logo without logoData
+          });
+          res.json(updated);
+        } else {
+          throw dbError;
+        }
+      }
     } catch (error) {
       next(error);
     }
@@ -121,23 +147,34 @@ export async function getCompanyLogo(req: Request, res: Response, next: NextFunc
     const tenantId = req.tenantId!;
 
     // Fetch only logo-related fields to avoid loading unnecessary data
-    const company = await companyRepo.findCompanyLogo(tenantId, id);
-    if (!company) {
-      throw new NotFoundError('Company', id);
-    }
+    try {
+      const company = await companyRepo.findCompanyLogo(tenantId, id);
+      if (!company) {
+        throw new NotFoundError('Company', id);
+      }
 
-    if (!company.logoData || !company.logoMimeType) {
-      res.status(404).json({
-        error: { code: 'NOT_FOUND', message: 'Logo not found' },
-      });
-      return;
-    }
+      if (!company.logoData || !company.logoMimeType) {
+        res.status(404).json({
+          error: { code: 'NOT_FOUND', message: 'Logo not found' },
+        });
+        return;
+      }
 
-    // Set appropriate headers and send the image data
-    res.setHeader('Content-Type', company.logoMimeType);
-    res.setHeader('Content-Length', company.logoSize || company.logoData.length);
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    res.send(company.logoData);
+      // Set appropriate headers and send the image data
+      res.setHeader('Content-Type', company.logoMimeType);
+      res.setHeader('Content-Length', company.logoSize || company.logoData.length);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      res.send(company.logoData);
+    } catch (dbError: any) {
+      // If logoData column doesn't exist yet (migration not applied), return 404
+      if (dbError.message?.includes('logoData') || dbError.code === 'P2021') {
+        res.status(404).json({
+          error: { code: 'NOT_FOUND', message: 'Logo not available (migration pending)' },
+        });
+        return;
+      }
+      throw dbError;
+    }
   } catch (error) {
     next(error);
   }

@@ -143,12 +143,39 @@ export async function findTaskByIdForTenant(tenantId: string, id: string): Promi
 
 export async function createTask(
   tenantId: string,
-  data: Omit<Prisma.TaskCreateInput, 'tenant'>
+  data: Omit<Prisma.TaskCreateInput, 'tenant' | 'project' | 'assignee'> & { 
+    projectId: string; 
+    assigneeId?: string | null;
+  }
 ): Promise<Task> {
+  const { projectId, assigneeId, ...restData } = data;
   return prisma.task.create({
     data: {
-      ...data,
+      ...restData,
       tenant: { connect: { id: tenantId } },
+      project: { connect: { id: projectId } },
+      ...(assigneeId && assigneeId !== null ? { assignee: { connect: { id: assigneeId } } } : {}),
+    },
+    include: {
+      project: {
+        select: {
+          id: true,
+          name: true,
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      assignee: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
     },
   });
 }

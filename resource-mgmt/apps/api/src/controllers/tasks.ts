@@ -49,21 +49,64 @@ export async function createTask(req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId!;
     const data = req.body;
-    // Convert date strings to Date objects
-    if (data.startDate && data.startDate !== '') {
-      data.startDate = new Date(data.startDate);
-    } else {
-      data.startDate = null;
-    }
-    if (data.estimatedEndDate && data.estimatedEndDate !== '') {
-      data.estimatedEndDate = new Date(data.estimatedEndDate);
-    } else {
-      data.estimatedEndDate = null;
-    }
-    // Normalize empty strings to null
-    if (data.assigneeId === '') data.assigneeId = null;
     
-    const task = await taskRepo.createTask(tenantId, data);
+    // Verify project exists and belongs to tenant
+    const { findProjectByIdForTenant } = await import('../repositories/projects.js');
+    const project = await findProjectByIdForTenant(tenantId, data.projectId);
+    if (!project) {
+      throw new NotFoundError('Project', data.projectId);
+    }
+    
+    // Verify assignee exists and belongs to tenant if provided
+    if (data.assigneeId && data.assigneeId !== '' && data.assigneeId !== null) {
+      const { findUserByIdForTenant } = await import('../repositories/users.js');
+      const assignee = await findUserByIdForTenant(tenantId, data.assigneeId);
+      if (!assignee) {
+        throw new NotFoundError('User', data.assigneeId);
+      }
+    }
+    
+    // Prepare clean data object for Prisma
+    const taskData: any = {
+      projectId: data.projectId,
+      title: data.title,
+      description: data.description || null,
+      status: data.status || 'Backlog',
+      priority: data.priority || 'Medium',
+      estimatedEffortHours: data.estimatedEffortHours || null,
+    };
+    
+    // Convert date strings to Date objects or null
+    if (data.startDate && data.startDate !== '' && data.startDate !== null) {
+      const startDate = new Date(data.startDate);
+      if (!isNaN(startDate.getTime())) {
+        taskData.startDate = startDate;
+      } else {
+        taskData.startDate = null;
+      }
+    } else {
+      taskData.startDate = null;
+    }
+    
+    if (data.estimatedEndDate && data.estimatedEndDate !== '' && data.estimatedEndDate !== null) {
+      const estimatedEndDate = new Date(data.estimatedEndDate);
+      if (!isNaN(estimatedEndDate.getTime())) {
+        taskData.estimatedEndDate = estimatedEndDate;
+      } else {
+        taskData.estimatedEndDate = null;
+      }
+    } else {
+      taskData.estimatedEndDate = null;
+    }
+    
+    // Normalize assigneeId
+    if (data.assigneeId && data.assigneeId !== '' && data.assigneeId !== null) {
+      taskData.assigneeId = data.assigneeId;
+    } else {
+      taskData.assigneeId = null;
+    }
+    
+    const task = await taskRepo.createTask(tenantId, taskData);
     res.status(201).json(task);
   } catch (error) {
     next(error);

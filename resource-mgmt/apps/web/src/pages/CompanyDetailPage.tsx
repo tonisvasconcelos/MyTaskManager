@@ -48,6 +48,14 @@ export function CompanyDetailPage() {
       <Card className="mb-8">
         <h2 className="text-xl font-semibold text-text-primary mb-4">Company Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          {company.logoUrl && (
+            <div className="md:col-span-2">
+              <span className="text-text-secondary">Logo:</span>
+              <div className="mt-2 w-24 h-24 rounded-md overflow-hidden border border-border bg-surface">
+                <img src={company.logoUrl} alt={`${company.name} logo`} className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
           {company.email && (
             <div>
               <span className="text-text-secondary">Email:</span>
@@ -76,10 +84,39 @@ export function CompanyDetailPage() {
               <p className="text-text-primary">{company.address}</p>
             </div>
           )}
+          {(company.countryCode || company.invoicingCurrencyCode) && (
+            <div>
+              <span className="text-text-secondary">Country / Currency:</span>
+              <p className="text-text-primary">
+                {company.countryCode || '—'} / {company.invoicingCurrencyCode || '—'}
+              </p>
+            </div>
+          )}
+          {company.taxRegistrationNo && (
+            <div>
+              <span className="text-text-secondary">Tax Registration:</span>
+              <p className="text-text-primary">{company.taxRegistrationNo}</p>
+            </div>
+          )}
+          {(company.billingUnit || company.unitPrice) && (
+            <div>
+              <span className="text-text-secondary">Billing:</span>
+              <p className="text-text-primary">
+                {company.billingUnit || '—'}
+                {company.unitPrice ? ` · ${company.unitPrice}${company.invoicingCurrencyCode ? ` ${company.invoicingCurrencyCode}` : ''}` : ''}
+              </p>
+            </div>
+          )}
           {company.notes && (
             <div className="md:col-span-2">
               <span className="text-text-secondary">Notes:</span>
               <p className="text-text-primary mt-1">{company.notes}</p>
+            </div>
+          )}
+          {company.generalNotes && (
+            <div className="md:col-span-2">
+              <span className="text-text-secondary">General Notes:</span>
+              <p className="text-text-primary mt-1 whitespace-pre-wrap">{company.generalNotes}</p>
             </div>
           )}
         </div>

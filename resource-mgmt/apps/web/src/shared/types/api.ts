@@ -29,6 +29,13 @@ export interface Company {
   website: string | null
   address: string | null
   notes: string | null
+  countryCode?: string | null
+  invoicingCurrencyCode?: string | null
+  taxRegistrationNo?: string | null
+  billingUnit?: 'HR' | 'PROJECT' | null
+  unitPrice?: string | null
+  generalNotes?: string | null
+  logoUrl?: string | null
   createdAt: string
   updatedAt: string
 }

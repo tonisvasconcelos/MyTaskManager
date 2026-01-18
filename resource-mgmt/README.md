@@ -74,6 +74,13 @@ resource-mgmt/
 ## Features
 
 - **Companies Management**: Create, edit, and manage customer/company information
+- **Company Billing & Compliance**:
+  - `countryCode` (ISO alpha-2, e.g. PT/BR)
+  - `invoicingCurrencyCode` (ISO-4217, e.g. EUR/USD)
+  - `taxRegistrationNo` (VAT/CNPJ/etc)
+  - `billingUnit` (HR / PROJECT) + `unitPrice`
+  - `generalNotes` (free text)
+- **Company Logo**: Upload a logo per company (shown on Companies list)
 - **Projects**: Track IT projects with status, dates, and company association
 - **Tasks (Kanban)**: Visual kanban board for task management with priorities, assignees, and status tracking
 - **Task Attachments**: Upload and manage multiple images per task
@@ -94,6 +101,10 @@ _(Placeholder for screenshots)_
 - Uploads stored in `apps/api/uploads/` directory
 - All API endpoints are prefixed with `/api`
 - Image uploads are served statically at `/uploads/<filename>`
+- Company logo upload:
+  - `POST /api/companies/:id/logo` (multipart/form-data field name: `file`)
+- Recommended env var for correct absolute file URLs:
+  - `BASE_URL=https://<your-railway-domain>`
 - Auth:
   - User login: `POST /api/auth/login` (tenant + email + password) returns JWT
   - Admin login: `POST /api/admin/login` returns SuperAdmin JWT

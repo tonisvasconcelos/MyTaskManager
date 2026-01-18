@@ -58,6 +58,11 @@ enum UserRole {
   SuperAdmin
 }
 
+enum BillingUnit {
+  HR
+  PROJECT
+}
+
 model Company {
   id        String   @id @default(uuid())
   tenantId  String
@@ -67,6 +72,17 @@ model Company {
   website   String?
   address   String?
   notes     String?  @db.Text
+  countryCode String?
+  invoicingCurrencyCode String?
+  taxRegistrationNo String?
+  billingUnit BillingUnit?
+  unitPrice Decimal? @db.Decimal(10, 2)
+  generalNotes String? @db.Text
+  logoFileName String?
+  logoOriginalName String?
+  logoMimeType String?
+  logoSize Int?
+  logoUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

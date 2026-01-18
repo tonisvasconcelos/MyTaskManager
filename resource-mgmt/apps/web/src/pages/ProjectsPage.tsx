@@ -17,7 +17,7 @@ import { z } from 'zod'
 import type { Project } from '../shared/types/api'
 
 const projectSchema = z.object({
-  companyId: z.string().uuid('Company is required'),
+  companyId: z.string().min(1, 'Company is required').uuid('Company is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   status: z.enum(['Planned', 'Active', 'OnHold', 'Completed', 'Cancelled']).optional(),

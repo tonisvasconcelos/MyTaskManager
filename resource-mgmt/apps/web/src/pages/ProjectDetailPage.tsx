@@ -26,6 +26,13 @@ const taskSchema = z.object({
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
   estimatedEffortHours: z.number().nonnegative().optional(),
+  refTicket: z.string().optional().or(z.literal('')),
+  refLink: z
+    .union([
+      z.string().url('Invalid URL format'),
+      z.literal(''),
+    ])
+    .optional(),
 })
 
 type TaskFormData = z.infer<typeof taskSchema>
@@ -97,6 +104,8 @@ export function ProjectDetailPage() {
         estimatedEffortHours: data.estimatedEffortHours !== undefined && data.estimatedEffortHours !== null
           ? (typeof data.estimatedEffortHours === 'number' ? data.estimatedEffortHours : parseFloat(String(data.estimatedEffortHours)))
           : null,
+        refTicket: data.refTicket || null,
+        refLink: data.refLink || null,
       } as any)
       setIsCreateModalOpen(false)
       reset()
@@ -325,6 +334,21 @@ export function ProjectDetailPage() {
             {...register('estimatedEffortHours', { valueAsNumber: true })}
             error={errors.estimatedEffortHours?.message}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ref. Ticket"
+              placeholder="e.g., JIRA-123, DEVOPS-456"
+              {...register('refTicket')}
+              error={errors.refTicket?.message}
+            />
+            <Input
+              label="Ref. Link"
+              type="url"
+              placeholder="https://..."
+              {...register('refLink')}
+              error={errors.refLink?.message}
+            />
+          </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={createMutation.isPending}>
               Create

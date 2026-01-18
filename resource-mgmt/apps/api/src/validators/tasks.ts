@@ -25,6 +25,14 @@ export const createTaskSchema = z.object({
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
+    refTicket: z.string().optional().or(z.null()).or(z.literal('')),
+    refLink: z
+      .union([
+        z.string().url('Invalid URL format'),
+        z.literal(''),
+        z.null(),
+      ])
+      .optional(),
   }),
 });
 
@@ -55,6 +63,14 @@ export const updateTaskSchema = z.object({
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
+    refTicket: z.string().optional().or(z.null()).or(z.literal('')),
+    refLink: z
+      .union([
+        z.string().url('Invalid URL format'),
+        z.literal(''),
+        z.null(),
+      ])
+      .optional(),
   }),
 });
 

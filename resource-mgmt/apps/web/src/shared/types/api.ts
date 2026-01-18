@@ -76,6 +76,8 @@ export interface Task {
   status: 'Backlog' | 'InProgress' | 'Blocked' | 'Done'
   priority: 'Low' | 'Medium' | 'High'
   assigneeId: string | null
+  refTicket: string | null
+  refLink: string | null
   createdAt: string
   updatedAt: string
   project?: {

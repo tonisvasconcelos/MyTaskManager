@@ -24,6 +24,13 @@ const taskSchema = z.object({
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
   estimatedEffortHours: z.number().nonnegative().optional(),
+  refTicket: z.string().optional().or(z.literal('')),
+  refLink: z
+    .union([
+      z.string().url('Invalid URL format'),
+      z.literal(''),
+    ])
+    .optional(),
 })
 
 type TaskFormData = z.infer<typeof taskSchema>
@@ -73,6 +80,8 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
       estimatedEffortHours: currentTask.estimatedEffortHours
         ? parseFloat(currentTask.estimatedEffortHours)
         : undefined,
+      refTicket: currentTask.refTicket || '',
+      refLink: currentTask.refLink || '',
     },
   })
 
@@ -85,6 +94,8 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
         startDate: data.startDate || null,
         estimatedEndDate: data.estimatedEndDate || null,
         estimatedEffortHours: data.estimatedEffortHours?.toString() || null,
+        refTicket: data.refTicket || null,
+        refLink: data.refLink || null,
       } as any)
       onUpdate(updated)
       setIsEditing(false)
@@ -202,6 +213,21 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
             {...register('estimatedEffortHours', { valueAsNumber: true })}
             error={errors.estimatedEffortHours?.message}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ref. Ticket"
+              placeholder="e.g., JIRA-123, DEVOPS-456"
+              {...register('refTicket')}
+              error={errors.refTicket?.message}
+            />
+            <Input
+              label="Ref. Link"
+              type="url"
+              placeholder="https://..."
+              {...register('refLink')}
+              error={errors.refLink?.message}
+            />
+          </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={updateMutation.isPending}>
               Save
@@ -270,6 +296,27 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                 <div>
                   <span className="text-text-secondary">Estimated Effort:</span>
                   <p className="text-text-primary">{currentTask.estimatedEffortHours} hours</p>
+                </div>
+              )}
+              {currentTask.refTicket && (
+                <div>
+                  <span className="text-text-secondary">Ref. Ticket:</span>
+                  <p className="text-text-primary">{currentTask.refTicket}</p>
+                </div>
+              )}
+              {currentTask.refLink && (
+                <div>
+                  <span className="text-text-secondary">Ref. Link:</span>
+                  <p className="text-text-primary">
+                    <a
+                      href={currentTask.refLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      {currentTask.refLink}
+                    </a>
+                  </p>
                 </div>
               )}
             </div>

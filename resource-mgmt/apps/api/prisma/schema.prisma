@@ -145,6 +145,8 @@ model Task {
   status            TaskStatus   @default(Backlog)
   priority          TaskPriority @default(Medium)
   assigneeId        String?
+  refTicket         String?      // Reference ticket from Jira/DevOps
+  refLink           String?       // Link to ticket in external system
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 

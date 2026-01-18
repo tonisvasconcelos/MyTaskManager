@@ -27,11 +27,11 @@ export function AppShell({ children }: AppShellProps) {
       {/* Sidebar - hidden on login pages */}
       {!isLoginPage && (
       <aside className="w-64 bg-surface border-r border-border p-6">
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-center">
           <img 
             src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
             alt="iTASKORA" 
-            className="h-16 w-auto max-w-full"
+            className="h-20 w-auto max-w-full object-contain"
             onError={(e) => {
               console.error('Failed to load logo:', `${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`);
               const target = e.target as HTMLImageElement;

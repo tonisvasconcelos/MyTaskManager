@@ -18,10 +18,14 @@ export function AppShell({ children }: AppShellProps) {
   const location = useLocation()
   const loggedIn = isLoggedIn()
   const adminLoggedIn = isAdminLoggedIn()
+  
+  // Hide sidebar on login pages
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/admin'
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+      {/* Sidebar - hidden on login pages */}
+      {!isLoginPage && (
       <aside className="w-64 bg-surface border-r border-border p-6">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text-primary">Resource Mgmt</h1>
@@ -80,9 +84,10 @@ export function AppShell({ children }: AppShellProps) {
           )}
         </div>
       </aside>
+      )}
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className={`${isLoginPage ? 'w-full' : 'flex-1'} overflow-auto`}>
         <div className="p-8">{children}</div>
       </main>
     </div>

@@ -56,11 +56,11 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mb-4 flex justify-center">
+          <div className="mb-4 flex justify-center min-h-[160px] items-center">
             <img 
               src={logoPath}
               alt="IT Project Company Manager System" 
-              className="h-24 w-auto max-w-full"
+              className="h-40 w-auto max-w-full object-contain"
               onError={(e) => {
                 // Fallback if image fails to load
                 console.error('Failed to load logo:', logoPath);

@@ -172,13 +172,21 @@ export async function companyHasProjects(tenantId: string, id: string): Promise<
 }
 
 export async function findCompanyLogo(tenantId: string, id: string): Promise<Pick<Company, 'logoData' | 'logoMimeType' | 'logoSize'> | null> {
-  const company = await prisma.company.findFirst({
-    where: { id, tenantId },
-    select: {
-      logoData: true,
-      logoMimeType: true,
-      logoSize: true,
-    },
-  });
-  return company;
+  try {
+    const company = await prisma.company.findFirst({
+      where: { id, tenantId },
+      select: {
+        logoData: true,
+        logoMimeType: true,
+        logoSize: true,
+      },
+    });
+    return company;
+  } catch (error: any) {
+    // If logoData column doesn't exist (migration not applied), return null
+    if (error.message?.includes('logoData') || error.message?.includes('column') || error.code === 'P2021' || error.code === 'P2001') {
+      return null;
+    }
+    throw error;
+  }
 }

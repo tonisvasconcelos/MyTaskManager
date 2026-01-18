@@ -5,6 +5,25 @@ import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Badge } from '../components/ui/Badge'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+
+function getLogoUrl(logoUrl: string | null | undefined): string | null {
+  if (!logoUrl) return null
+  
+  // If already a full URL, return as-is
+  if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+    return logoUrl
+  }
+  
+  // If relative path, construct full URL
+  const baseUrl = API_BASE_URL.replace('/api', '')
+  if (logoUrl.startsWith('/uploads/')) {
+    return `${baseUrl}${logoUrl}`
+  }
+  
+  return `${baseUrl}/uploads/${logoUrl}`
+}
+
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
   Planned: 'info',
   Active: 'success',

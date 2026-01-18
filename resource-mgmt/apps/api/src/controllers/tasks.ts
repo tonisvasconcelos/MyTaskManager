@@ -73,8 +73,21 @@ export async function createTask(req: Request, res: Response, next: NextFunction
       description: data.description || null,
       status: data.status || 'Backlog',
       priority: data.priority || 'Medium',
-      estimatedEffortHours: data.estimatedEffortHours || null,
     };
+    
+    // Handle estimatedEffortHours - convert string to number if needed
+    if (data.estimatedEffortHours !== undefined && data.estimatedEffortHours !== null && data.estimatedEffortHours !== '') {
+      const effortHours = typeof data.estimatedEffortHours === 'string' 
+        ? parseFloat(data.estimatedEffortHours) 
+        : data.estimatedEffortHours;
+      if (!isNaN(effortHours) && effortHours >= 0) {
+        taskData.estimatedEffortHours = effortHours;
+      } else {
+        taskData.estimatedEffortHours = null;
+      }
+    } else {
+      taskData.estimatedEffortHours = null;
+    }
     
     // Convert date strings to Date objects or null
     if (data.startDate && data.startDate !== '' && data.startDate !== null) {

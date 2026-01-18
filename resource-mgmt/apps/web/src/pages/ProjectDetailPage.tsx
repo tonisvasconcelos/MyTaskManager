@@ -94,7 +94,9 @@ export function ProjectDetailPage() {
         assigneeId: data.assigneeId || null,
         startDate: data.startDate || null,
         estimatedEndDate: data.estimatedEndDate || null,
-        estimatedEffortHours: data.estimatedEffortHours?.toString() || null,
+        estimatedEffortHours: data.estimatedEffortHours !== undefined && data.estimatedEffortHours !== null
+          ? (typeof data.estimatedEffortHours === 'number' ? data.estimatedEffortHours : parseFloat(String(data.estimatedEffortHours)))
+          : null,
       } as any)
       setIsCreateModalOpen(false)
       reset()

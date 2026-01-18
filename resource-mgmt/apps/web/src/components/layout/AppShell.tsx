@@ -28,8 +28,16 @@ export function AppShell({ children }: AppShellProps) {
       {!isLoginPage && (
       <aside className="w-64 bg-surface border-r border-border p-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-text-primary">Resource Mgmt</h1>
-          <p className="text-sm text-text-secondary mt-1">Task Management</p>
+          <img 
+            src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
+            alt="iTASKORA" 
+            className="h-12 w-auto"
+            onError={(e) => {
+              console.error('Failed to load logo:', `${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`);
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
         </div>
         <nav className="space-y-2">
           {navItems.map((item) => {

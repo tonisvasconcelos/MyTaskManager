@@ -9,7 +9,8 @@ import { Button } from '../components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 
 // Logo image - using public path that works with GitHub Pages base URL
-const logoPath = `${import.meta.env.BASE_URL}images/LogoMakr_60iQFv.png`
+// BASE_URL already includes trailing slash, so we don't need another one
+const logoPath = `${import.meta.env.BASE_URL || '/'}images/LogoMakr_60iQFv.png`
 
 const loginSchema = z.object({
   tenant: z.string().min(2, 'Tenant is required').max(32),

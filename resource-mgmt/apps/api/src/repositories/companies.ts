@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma.js';
-import { parsePagination, createPaginationResult } from '../lib/pagination.js';
+import { parsePagination } from '../lib/pagination.js';
 import type { Company, Prisma } from '@prisma/client';
 
 export async function findCompanies(

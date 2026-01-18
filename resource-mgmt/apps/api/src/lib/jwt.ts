@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { sign, verify, type Secret, type SignOptions } from 'jsonwebtoken';
 import { InternalError } from './errors.js';
 
 export type JwtRole = 'Admin' | 'Manager' | 'Contributor' | 'SuperAdmin';
@@ -9,7 +9,7 @@ export type UserJwtPayload = {
   role: JwtRole;
 };
 
-function getJwtSecret(): string {
+function getJwtSecret(): Secret {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new InternalError('JWT_SECRET is not configured');
@@ -17,12 +17,12 @@ function getJwtSecret(): string {
   return secret;
 }
 
-export function signJwt(payload: UserJwtPayload, expiresIn: string = '8h'): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn });
+export function signJwt(payload: UserJwtPayload, expiresIn: SignOptions['expiresIn'] = '8h'): string {
+  return sign(payload, getJwtSecret(), { expiresIn });
 }
 
 export function verifyJwt(token: string): UserJwtPayload {
-  const decoded = jwt.verify(token, getJwtSecret());
+  const decoded = verify(token, getJwtSecret());
   return decoded as UserJwtPayload;
 }
 

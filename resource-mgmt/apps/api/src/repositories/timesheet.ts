@@ -1,12 +1,38 @@
 import prisma from '../lib/prisma.js';
-import type { TimeEntry, Prisma } from '@prisma/client';
+import type { Prisma, TimeEntry } from '@prisma/client';
+
+export type TimeEntryWithRelations = Prisma.TimeEntryGetPayload<{
+  include: {
+    task: {
+      include: {
+        project: {
+          include: {
+            company: {
+              select: {
+                id: true;
+                name: true;
+              };
+            };
+          };
+        };
+      };
+    };
+    user: {
+      select: {
+        id: true;
+        fullName: true;
+        email: true;
+      };
+    };
+  };
+}>;
 
 export async function findTimeEntries(
   tenantId: string,
   userId?: string,
   from?: string,
   to?: string
-): Promise<TimeEntry[]> {
+): Promise<TimeEntryWithRelations[]> {
   const where: Prisma.TimeEntryWhereInput = { tenantId };
   
   if (userId) {
@@ -58,7 +84,7 @@ export async function getTimesheetSummary(
   from?: string,
   to?: string
 ): Promise<{
-  entries: TimeEntry[];
+  entries: TimeEntryWithRelations[];
   totalsPerDay: Record<string, number>;
   totalsPerProject: Record<string, number>;
   totalsPerTask: Record<string, number>;
@@ -92,26 +118,63 @@ export async function getTimesheetSummary(
   };
 }
 
-export async function findTimeEntryById(id: string): Promise<TimeEntry | null> {
+export async function findTimeEntryById(id: string): Promise<TimeEntryWithRelations | null> {
   return prisma.timeEntry.findUnique({
     where: { id },
     include: {
       task: {
         include: {
-          project: true,
+          project: {
+            include: {
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
       },
-      user: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
     },
   });
 }
 
-export async function findTimeEntryByIdForTenant(tenantId: string, id: string): Promise<TimeEntry | null> {
+export async function findTimeEntryByIdForTenant(
+  tenantId: string,
+  id: string
+): Promise<TimeEntryWithRelations | null> {
   return prisma.timeEntry.findFirst({
     where: { id, tenantId },
     include: {
-      task: { include: { project: true } },
-      user: true,
+      task: {
+        include: {
+          project: {
+            include: {
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
     },
   });
 }
@@ -119,7 +182,7 @@ export async function findTimeEntryByIdForTenant(tenantId: string, id: string): 
 export async function createTimeEntry(
   tenantId: string,
   data: Omit<Prisma.TimeEntryCreateInput, 'tenant'>
-): Promise<TimeEntry> {
+): Promise<TimeEntryWithRelations> {
   return prisma.timeEntry.create({
     data: {
       ...data,
@@ -154,7 +217,7 @@ export async function createTimeEntry(
 export async function updateTimeEntry(
   id: string,
   data: Prisma.TimeEntryUpdateInput
-): Promise<TimeEntry> {
+): Promise<TimeEntryWithRelations> {
   return prisma.timeEntry.update({
     where: { id },
     data,

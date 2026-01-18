@@ -28,7 +28,7 @@ function validateTenantSlug(slug: string) {
  * - Requires `X-Tenant-Id` header (slug)
  * - Auto-creates tenant row on first use (so a new tenant is empty by default)
  */
-export async function requireTenant(req: Request, res: Response, next: NextFunction) {
+export async function requireTenant(req: Request, _res: Response, next: NextFunction) {
   try {
     const slugHeader = req.header('x-tenant-id');
     if (!slugHeader) {

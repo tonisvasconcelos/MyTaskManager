@@ -10,7 +10,9 @@
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
-    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build": "npm run build --workspace=apps/api",
+    "build:all": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
     "start": "npm run start --workspace=apps/api",
     "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web"
   },

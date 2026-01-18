@@ -13,7 +13,7 @@ declare module 'express-serve-static-core' {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   try {
     const header = req.header('authorization');
     if (!header || !header.toLowerCase().startsWith('bearer ')) {
@@ -39,8 +39,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export function requireTenantAuth(req: Request, res: Response, next: NextFunction) {
-  requireAuth(req, res, (err) => {
+export function requireTenantAuth(req: Request, _res: Response, next: NextFunction) {
+  requireAuth(req, _res, (err) => {
     if (err) return next(err);
     if (!req.auth?.tenantId) {
       return next(new ValidationError('Tenant-scoped token required'));
@@ -49,8 +49,8 @@ export function requireTenantAuth(req: Request, res: Response, next: NextFunctio
   });
 }
 
-export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
-  requireAuth(req, res, (err) => {
+export function requireSuperAdmin(req: Request, _res: Response, next: NextFunction) {
+  requireAuth(req, _res, (err) => {
     if (err) return next(err);
     if (req.auth?.role !== 'SuperAdmin') {
       return next(new ValidationError('SuperAdmin access required'));

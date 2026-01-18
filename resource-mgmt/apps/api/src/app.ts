@@ -62,7 +62,7 @@ export function createApp(): Express {
   app.use('/uploads', express.static(path.resolve(process.cwd(), uploadDir)));
 
   // Health check
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
 

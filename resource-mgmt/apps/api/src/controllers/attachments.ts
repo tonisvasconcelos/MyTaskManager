@@ -14,12 +14,13 @@ export const uploadAttachments = [
       const files = req.files as Express.Multer.File[];
 
       if (!files || files.length === 0) {
-        return res.status(400).json({
+        res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
             message: 'No files uploaded',
           },
         });
+        return;
       }
 
       // Verify task exists
@@ -29,7 +30,6 @@ export const uploadAttachments = [
         throw new NotFoundError('Task', taskId);
       }
 
-      const uploadDir = process.env.UPLOAD_DIR || 'uploads';
       const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
 
       const attachments = await Promise.all(

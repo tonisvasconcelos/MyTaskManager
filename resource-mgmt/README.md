@@ -116,6 +116,7 @@ _(Placeholder for screenshots)_
 - The web app is deployed via GitHub Actions to GitHub Pages.
 - Set GitHub Actions variable `VITE_API_URL` to your Railway API base:
   - Example: `https://<your-service>.up.railway.app/api`
+- Production (this repo): `https://api-production-ade0.up.railway.app/api`
 - URL:
   - `https://tonisvasconcelos.github.io/MyTaskManager/#/login`
   - Admin portal: `https://tonisvasconcelos.github.io/MyTaskManager/#/admin/login`

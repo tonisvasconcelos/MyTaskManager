@@ -146,11 +146,20 @@ export async function getCompanyLogo(req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const tenantId = req.tenantId!;
 
+    // First verify company exists and belongs to tenant
+    const companyExists = await companyRepo.findCompanyByIdForTenant(tenantId, id);
+    if (!companyExists) {
+      throw new NotFoundError('Company', id);
+    }
+
     // Fetch only logo-related fields to avoid loading unnecessary data
     try {
       const company = await companyRepo.findCompanyLogo(tenantId, id);
       if (!company) {
-        throw new NotFoundError('Company', id);
+        res.status(404).json({
+          error: { code: 'NOT_FOUND', message: 'Logo not found' },
+        });
+        return;
       }
 
       if (!company.logoData || !company.logoMimeType) {
@@ -167,7 +176,7 @@ export async function getCompanyLogo(req: Request, res: Response, next: NextFunc
       res.send(company.logoData);
     } catch (dbError: any) {
       // If logoData column doesn't exist yet (migration not applied), return 404
-      if (dbError.message?.includes('logoData') || dbError.code === 'P2021') {
+      if (dbError.message?.includes('logoData') || dbError.message?.includes('column') || dbError.code === 'P2021' || dbError.code === 'P2001') {
         res.status(404).json({
           error: { code: 'NOT_FOUND', message: 'Logo not available (migration pending)' },
         });

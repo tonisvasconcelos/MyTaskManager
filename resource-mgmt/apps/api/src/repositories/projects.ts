@@ -48,7 +48,32 @@ export async function findProjectByIdForTenant(tenantId: string, id: string): Pr
   return prisma.project.findFirst({
     where: { id, tenantId },
     include: {
-      company: true,
+      company: {
+        select: {
+          id: true,
+          tenantId: true,
+          name: true,
+          email: true,
+          phone: true,
+          website: true,
+          address: true,
+          notes: true,
+          countryCode: true,
+          invoicingCurrencyCode: true,
+          taxRegistrationNo: true,
+          billingUnit: true,
+          unitPrice: true,
+          generalNotes: true,
+          logoFileName: true,
+          logoOriginalName: true,
+          logoMimeType: true,
+          logoSize: true,
+          logoUrl: true,
+          // Exclude logoData (BLOB) from company include
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
       tasks: {
         include: {
           assignee: {

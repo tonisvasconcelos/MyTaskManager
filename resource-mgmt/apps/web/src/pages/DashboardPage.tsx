@@ -37,8 +37,8 @@ export function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-text-primary mb-8">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <h1 className="text-3xl font-bold text-text-primary mb-6 md:mb-8">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <Card>
           <h3 className="text-sm text-text-secondary mb-2">Active Projects</h3>
           {projectsLoading ? (
@@ -65,7 +65,7 @@ export function DashboardPage() {
         </Card>
       </div>
       <Card>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <h2 className="text-xl font-semibold text-text-primary">Ongoing Tasks</h2>
           <Link to="/tasks/ongoing" className="text-accent hover:underline text-sm">
             View all
@@ -85,14 +85,14 @@ export function DashboardPage() {
                 to={`/projects/${task.projectId}`}
                 className="block p-4 border border-border rounded-md hover:border-accent/50 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-text-primary mb-1">{task.title}</h3>
-                    <p className="text-sm text-text-secondary">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0 flex-1">
+                    <h3 className="font-medium text-text-primary mb-1 break-words">{task.title}</h3>
+                    <p className="text-sm text-text-secondary break-words">
                       {task.project?.name} • {task.assignee?.fullName || 'Unassigned'}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Badge variant={task.status === 'Blocked' ? 'danger' : 'info'}>
                       {task.status}
                     </Badge>

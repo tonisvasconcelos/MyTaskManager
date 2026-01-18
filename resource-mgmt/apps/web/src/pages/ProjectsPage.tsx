@@ -116,12 +116,12 @@ export function ProjectsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <h1 className="text-3xl font-bold text-text-primary">Projects</h1>
         <Button onClick={openCreateModal}>Create Project</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Input
           placeholder="Search projects..."
           value={search}
@@ -169,17 +169,17 @@ export function ProjectsPage() {
           <div className="space-y-3 mb-6">
             {data.data.map((project) => (
               <Card key={project.id}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
                     <Link to={`/projects/${project.id}`}>
-                      <h3 className="text-lg font-semibold text-text-primary mb-2 hover:text-accent transition-colors">
+                      <h3 className="text-lg font-semibold text-text-primary mb-2 hover:text-accent transition-colors break-words">
                         {project.name}
                       </h3>
                     </Link>
                     {project.description && (
-                      <p className="text-sm text-text-secondary mb-2">{project.description}</p>
+                      <p className="text-sm text-text-secondary mb-2 break-words">{project.description}</p>
                     )}
-                    <div className="flex gap-4 text-sm text-text-secondary">
+                    <div className="flex flex-wrap gap-2 md:gap-4 text-sm text-text-secondary">
                       <span>{project.company?.name}</span>
                       {project.startDate && (
                         <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
@@ -189,16 +189,18 @@ export function ProjectsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={statusColors[project.status] || 'default'}>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                    <Badge variant={statusColors[project.status] || 'default'} className="self-start">
                       {project.status}
                     </Badge>
-                    <Button variant="secondary" size="sm" onClick={() => openEditModal(project)}>
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete(project.id)}>
-                      Delete
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => openEditModal(project)}>
+                        Edit
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => handleDelete(project.id)}>
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -256,7 +258,7 @@ export function ProjectsPage() {
               { value: 'Cancelled', label: 'Cancelled' },
             ]}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Start Date"
               type="date"

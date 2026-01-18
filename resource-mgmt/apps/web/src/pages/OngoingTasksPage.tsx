@@ -29,7 +29,7 @@ export function OngoingTasksPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-text-primary mb-8">Ongoing Tasks</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-6 md:mb-8">Ongoing Tasks</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Select
@@ -71,19 +71,19 @@ export function OngoingTasksPage() {
           <div className="space-y-3 mb-6">
             {data.data.map((task) => (
               <Card key={task.id}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <Link to={`/projects/${task.projectId}`}>
-                      <h3 className="text-lg font-semibold text-text-primary mb-2 hover:text-accent transition-colors">
+                      <h3 className="text-lg font-semibold text-text-primary mb-2 hover:text-accent transition-colors break-words">
                         {task.title}
                       </h3>
                     </Link>
                     {task.description && (
-                      <p className="text-sm text-text-secondary mb-2 line-clamp-2">
+                      <p className="text-sm text-text-secondary mb-2 line-clamp-2 break-words">
                         {task.description}
                       </p>
                     )}
-                    <div className="flex gap-4 text-sm text-text-secondary">
+                    <div className="flex flex-wrap gap-2 md:gap-4 text-sm text-text-secondary">
                       <span>{task.project?.name}</span>
                       {task.project?.company && <span>• {task.project.company.name}</span>}
                       {task.assignee && <span>• 👤 {task.assignee.fullName}</span>}
@@ -92,7 +92,7 @@ export function OngoingTasksPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <Badge variant={priorityColors[task.priority] || 'default'}>
                       {task.priority}
                     </Badge>

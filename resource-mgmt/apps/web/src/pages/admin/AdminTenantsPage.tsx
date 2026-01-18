@@ -144,13 +144,13 @@ export function AdminTenantsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-text-primary">Admin · Tenants</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Admin · Tenants</h1>
             <p className="text-text-secondary mt-1">Provision tenants, users, and licenses</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="secondary" onClick={() => navigate('/')}>
               Back to app
             </Button>
@@ -167,11 +167,12 @@ export function AdminTenantsPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex gap-3">
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Search tenants..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
           />
           <Button
             variant="secondary"
@@ -196,10 +197,10 @@ export function AdminTenantsPage() {
             <div className="space-y-3">
               {data.data.map((t) => (
                 <Card key={t.id}>
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold text-text-primary">{t.slug}</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                        <h3 className="text-lg font-semibold text-text-primary break-words">{t.slug}</h3>
                         <Badge variant={t.isActive ? 'success' : 'danger'}>
                           {t.isActive ? 'Active' : 'Inactive'}
                         </Badge>
@@ -209,12 +210,12 @@ export function AdminTenantsPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-text-secondary mt-1">
+                      <p className="text-sm text-text-secondary mt-1 break-words">
                         {t.name || '—'} · {t.planName} · Seats {t.maxUsers}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Link to={`/admin/tenants/${t.id}`} className="btn-secondary">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Link to={`/admin/tenants/${t.id}`} className="btn-secondary text-center">
                         Manage users
                       </Link>
                       <Button variant="secondary" size="sm" onClick={() => openEdit(t)}>

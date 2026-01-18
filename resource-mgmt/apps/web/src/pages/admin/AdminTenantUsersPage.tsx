@@ -107,14 +107,14 @@ export function AdminTenantUsersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-text-primary">Admin · Tenant Users</h1>
-            <p className="text-text-secondary mt-1">Tenant id: {id}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Admin · Tenant Users</h1>
+            <p className="text-text-secondary mt-1 break-all">Tenant id: {id}</p>
           </div>
-          <div className="flex gap-2">
-            <Link to="/admin" className="btn-secondary">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link to="/admin" className="btn-secondary text-center">
               ← Back to tenants
             </Link>
             <Button onClick={() => setIsCreateOpen(true)}>Create user</Button>
@@ -132,12 +132,12 @@ export function AdminTenantUsersPage() {
           <div className="space-y-3">
             {users.map((u) => (
               <Card key={u.id}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-text-primary">{u.fullName}</h3>
-                    <p className="text-sm text-text-secondary">{u.email} · {u.role}</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-text-primary break-words">{u.fullName}</h3>
+                    <p className="text-sm text-text-secondary break-words">{u.email} · {u.role}</p>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => openEdit(u)}>
+                  <Button variant="secondary" size="sm" onClick={() => openEdit(u)} className="self-start sm:self-auto">
                     Edit
                   </Button>
                 </div>

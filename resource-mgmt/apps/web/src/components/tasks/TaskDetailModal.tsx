@@ -159,7 +159,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
             {...register('description')}
             error={errors.description?.message}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label="Status"
               {...register('status')}
@@ -191,7 +191,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
             ]}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Start Date"
               type="date"
@@ -213,7 +213,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
             {...register('estimatedEffortHours', { valueAsNumber: true })}
             error={errors.estimatedEffortHours?.message}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Ref. Ticket"
               placeholder="e.g., JIRA-123, DEVOPS-456"
@@ -228,8 +228,8 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               error={errors.refLink?.message}
             />
           </div>
-          <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={updateMutation.isPending}>
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button type="submit" disabled={updateMutation.isPending} className="flex-1 sm:flex-initial">
               Save
             </Button>
             <Button
@@ -239,6 +239,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                 setIsEditing(false)
                 reset()
               }}
+              className="flex-1 sm:flex-initial"
             >
               Cancel
             </Button>
@@ -247,10 +248,10 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
       ) : (
         <div className="space-y-6">
           <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-semibold text-text-primary mb-2">{currentTask.title}</h2>
-                <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl md:text-2xl font-semibold text-text-primary mb-2 break-words">{currentTask.title}</h2>
+                <div className="flex flex-wrap gap-2">
                   <Badge variant={priorityColors[currentTask.priority] || 'default'}>
                     {currentTask.priority}
                   </Badge>
@@ -259,11 +260,11 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                   </Badge>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)} className="w-full sm:w-auto">
                   Edit
                 </Button>
-                <Button variant="danger" size="sm" onClick={handleDeleteTask}>
+                <Button variant="danger" size="sm" onClick={handleDeleteTask} className="w-full sm:w-auto">
                   Delete
                 </Button>
               </div>
@@ -346,7 +347,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
             {attachmentsLoading ? (
               <Skeleton className="h-24" />
             ) : attachments && attachments.length > 0 ? (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {attachments.map((attachment) => (
                   <div key={attachment.id} className="relative">
                     <img

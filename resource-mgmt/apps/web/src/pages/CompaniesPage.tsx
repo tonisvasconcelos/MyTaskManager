@@ -152,7 +152,7 @@ export function CompaniesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <h1 className="text-3xl font-bold text-text-primary">Companies</h1>
         <Button onClick={openCreateModal}>Create Company</Button>
       </div>
@@ -179,7 +179,7 @@ export function CompaniesPage() {
           <div className="space-y-3 mb-6">
             {data.data.map((company) => (
               <Card key={company.id}>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1 flex gap-4">
                     <div className="w-12 h-12 rounded-md overflow-hidden border border-border bg-surface flex items-center justify-center shrink-0">
                       {(() => {
@@ -240,7 +240,7 @@ export function CompaniesPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button variant="secondary" size="sm" onClick={() => openEditModal(company)}>
                       Edit
                     </Button>

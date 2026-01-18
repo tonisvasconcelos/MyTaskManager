@@ -12,11 +12,11 @@ export function Pagination({ page, pageSize, total, totalPages, onPageChange }: 
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between mt-6">
-      <div className="text-sm text-text-secondary">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+      <div className="text-sm text-text-secondary text-center sm:text-left">
         Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center justify-center gap-2">
         <Button
           variant="secondary"
           size="sm"
@@ -25,7 +25,7 @@ export function Pagination({ page, pageSize, total, totalPages, onPageChange }: 
         >
           Previous
         </Button>
-        <div className="flex items-center gap-1">
+        <div className="hidden xs:flex items-center gap-1">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum: number
             if (totalPages <= 5) {
@@ -42,7 +42,7 @@ export function Pagination({ page, pageSize, total, totalPages, onPageChange }: 
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`px-2 md:px-3 py-1 rounded-md text-sm font-medium transition-colors min-w-[2rem] ${
                   page === pageNum
                     ? 'bg-accent text-white'
                     : 'bg-surface border border-border text-text-secondary hover:bg-surface/80'
@@ -52,6 +52,9 @@ export function Pagination({ page, pageSize, total, totalPages, onPageChange }: 
               </button>
             )
           })}
+        </div>
+        <div className="xs:hidden text-sm text-text-secondary px-2">
+          Page {page} of {totalPages}
         </div>
         <Button
           variant="secondary"

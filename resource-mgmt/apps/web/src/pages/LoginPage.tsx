@@ -60,7 +60,7 @@ export function LoginPage() {
             <img 
               src={logoPath}
               alt="IT Project Company Manager System" 
-              className="h-40 w-auto max-w-full object-contain"
+              className="h-32 md:h-40 w-auto max-w-full object-contain"
               onError={(e) => {
                 // Fallback if image fails to load
                 console.error('Failed to load logo:', logoPath);

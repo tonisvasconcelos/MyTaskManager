@@ -141,13 +141,13 @@ export function ProjectDetailPage() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <Link to="/projects" className="text-accent hover:underline text-sm mb-4 inline-block">
           ← Back to Projects
         </Link>
-        <h1 className="text-3xl font-bold text-text-primary">{project.name}</h1>
-        <p className="text-text-secondary mt-2">{project.description || 'No description'}</p>
-        <div className="flex gap-4 mt-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-text-primary break-words">{project.name}</h1>
+        <p className="text-text-secondary mt-2 break-words">{project.description || 'No description'}</p>
+        <div className="flex flex-wrap gap-2 md:gap-4 mt-4">
           <Badge variant={project.status === 'Active' ? 'success' : 'default'}>
             {project.status}
           </Badge>
@@ -165,10 +165,10 @@ export function ProjectDetailPage() {
       </div>
 
       <div className="mb-6 border-b border-border">
-        <div className="flex gap-4">
+        <div className="flex gap-2 md:gap-4">
           <button
             onClick={() => setActiveTab('tasks')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 font-medium transition-colors text-sm md:text-base flex-1 md:flex-initial ${
               activeTab === 'tasks'
                 ? 'text-accent border-b-2 border-accent'
                 : 'text-text-secondary hover:text-text-primary'
@@ -178,7 +178,7 @@ export function ProjectDetailPage() {
           </button>
           <button
             onClick={() => setActiveTab('timesheet')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 font-medium transition-colors text-sm md:text-base flex-1 md:flex-initial ${
               activeTab === 'timesheet'
                 ? 'text-accent border-b-2 border-accent'
                 : 'text-text-secondary hover:text-text-primary'
@@ -195,7 +195,7 @@ export function ProjectDetailPage() {
             <Button onClick={openCreateModal}>Create Task</Button>
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statusColumns.map((column) => (
               <div key={column.status} className="flex flex-col">
                 <div className="mb-3">
@@ -285,7 +285,7 @@ export function ProjectDetailPage() {
             {...register('description')}
             error={errors.description?.message}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label="Status"
               {...register('status')}
@@ -312,7 +312,7 @@ export function ProjectDetailPage() {
               ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
             ]}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Start Date"
               type="date"
@@ -334,7 +334,7 @@ export function ProjectDetailPage() {
             {...register('estimatedEffortHours', { valueAsNumber: true })}
             error={errors.estimatedEffortHours?.message}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Ref. Ticket"
               placeholder="e.g., JIRA-123, DEVOPS-456"

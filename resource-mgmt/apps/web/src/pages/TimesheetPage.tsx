@@ -143,12 +143,12 @@ export function TimesheetPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <h1 className="text-3xl font-bold text-text-primary">Timesheet</h1>
         <Button onClick={openCreateModal}>Add Time Entry</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Select
           value={userFilter}
           onChange={(e) => setUserFilter(e.target.value)}
@@ -179,12 +179,12 @@ export function TimesheetPage() {
       </div>
 
       <Card className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <Button variant="secondary" size="sm" onClick={() => navigateWeek('prev')}>
               ← Previous
             </Button>
-            <h2 className="text-lg font-semibold text-text-primary">
+            <h2 className="text-base sm:text-lg font-semibold text-text-primary text-center sm:text-left">
               {weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}
             </h2>
             <Button variant="secondary" size="sm" onClick={() => navigateWeek('next')}>
@@ -192,81 +192,148 @@ export function TimesheetPage() {
             </Button>
           </div>
           {hasWarning && (
-            <Badge variant="warning">⚠️ Some days exceed 12 hours</Badge>
+            <Badge variant="warning" className="self-center sm:self-auto">⚠️ Some days exceed 12 hours</Badge>
           )}
         </div>
 
         {isLoading ? (
           <Skeleton className="h-64" />
         ) : timesheet ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 text-text-secondary font-medium">Date</th>
-                  <th className="text-left py-2 text-text-secondary font-medium">Task</th>
-                  <th className="text-left py-2 text-text-secondary font-medium">User</th>
-                  <th className="text-right py-2 text-text-secondary font-medium">Hours</th>
-                  <th className="text-left py-2 text-text-secondary font-medium">Notes</th>
-                  <th className="text-right py-2 text-text-secondary font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {timesheet.entries
-                  .filter((entry) => {
-                    if (taskFilter && entry.taskId !== taskFilter) return false
-                    if (userFilter && entry.userId !== userFilter) return false
-                    return true
-                  })
-                  .map((entry) => {
-                    const dayTotal = dailyTotals[entry.entryDate] || 0
-                    return (
-                      <tr key={entry.id} className="border-b border-border">
-                        <td className="py-2 text-text-primary">
-                          {new Date(entry.entryDate).toLocaleDateString()}
-                          {dayTotal > 12 && (
-                            <Badge variant="warning" className="ml-2 text-xs">
-                              {dayTotal.toFixed(1)}h
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="py-2 text-text-primary">
-                          {entry.task?.title || 'Unknown Task'}
-                        </td>
-                        <td className="py-2 text-text-primary">
-                          {entry.user?.fullName || 'Unknown User'}
-                        </td>
-                        <td className="py-2 text-right text-text-primary">{entry.hours}</td>
-                        <td className="py-2 text-text-secondary text-sm max-w-xs truncate">
-                          {entry.notes || '-'}
-                        </td>
-                        <td className="py-2 text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => openEditModal(entry)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(entry.id)}
-                            >
-                              Delete
-                            </Button>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 text-text-secondary font-medium">Date</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">Task</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">User</th>
+                    <th className="text-right py-2 text-text-secondary font-medium">Hours</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">Notes</th>
+                    <th className="text-right py-2 text-text-secondary font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timesheet.entries
+                    .filter((entry) => {
+                      if (taskFilter && entry.taskId !== taskFilter) return false
+                      if (userFilter && entry.userId !== userFilter) return false
+                      return true
+                    })
+                    .map((entry) => {
+                      const dayTotal = dailyTotals[entry.entryDate] || 0
+                      return (
+                        <tr key={entry.id} className="border-b border-border">
+                          <td className="py-2 text-text-primary">
+                            {new Date(entry.entryDate).toLocaleDateString()}
+                            {dayTotal > 12 && (
+                              <Badge variant="warning" className="ml-2 text-xs">
+                                {dayTotal.toFixed(1)}h
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-2 text-text-primary">
+                            {entry.task?.title || 'Unknown Task'}
+                          </td>
+                          <td className="py-2 text-text-primary">
+                            {entry.user?.fullName || 'Unknown User'}
+                          </td>
+                          <td className="py-2 text-right text-text-primary">{entry.hours}</td>
+                          <td className="py-2 text-text-secondary text-sm max-w-xs truncate">
+                            {entry.notes || '-'}
+                          </td>
+                          <td className="py-2 text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => openEditModal(entry)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(entry.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+              {timesheet.entries.length === 0 && (
+                <p className="text-text-secondary text-center py-8">No time entries for this week</p>
+              )}
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {timesheet.entries
+                .filter((entry) => {
+                  if (taskFilter && entry.taskId !== taskFilter) return false
+                  if (userFilter && entry.userId !== userFilter) return false
+                  return true
+                })
+                .map((entry) => {
+                  const dayTotal = dailyTotals[entry.entryDate] || 0
+                  return (
+                    <div key={entry.id} className="border border-border rounded-md p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-text-primary font-medium">
+                              {new Date(entry.entryDate).toLocaleDateString()}
+                            </span>
+                            {dayTotal > 12 && (
+                              <Badge variant="warning" className="text-xs">
+                                {dayTotal.toFixed(1)}h
+                              </Badge>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-              </tbody>
-            </table>
-            {timesheet.entries.length === 0 && (
-              <p className="text-text-secondary text-center py-8">No time entries for this week</p>
-            )}
-          </div>
+                          <p className="text-text-primary font-semibold">
+                            {entry.task?.title || 'Unknown Task'}
+                          </p>
+                          <p className="text-text-secondary text-sm">
+                            {entry.user?.fullName || 'Unknown User'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-text-primary font-semibold">{entry.hours}h</p>
+                        </div>
+                      </div>
+                      {entry.notes && (
+                        <p className="text-text-secondary text-sm break-words">{entry.notes}</p>
+                      )}
+                      <div className="flex gap-2 pt-2 border-t border-border">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => openEditModal(entry)}
+                          className="flex-1"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(entry.id)}
+                          className="flex-1"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              {timesheet.entries.length === 0 && (
+                <p className="text-text-secondary text-center py-8">No time entries for this week</p>
+              )}
+            </div>
+          </>
         ) : (
           <p className="text-text-secondary text-center py-8">Loading...</p>
         )}
@@ -350,7 +417,7 @@ export function TimesheetPage() {
                 .map((t) => ({ value: t.id, label: t.title })) || []),
             ]}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Date *"
               type="date"

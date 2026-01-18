@@ -57,16 +57,16 @@ export function CompanyDetailPage() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <Link to="/companies" className="text-accent hover:underline text-sm mb-4 inline-block">
           ← Back to Companies
         </Link>
-        <h1 className="text-3xl font-bold text-text-primary">{company.name}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-text-primary break-words">{company.name}</h1>
       </div>
 
-      <Card className="mb-8">
+      <Card className="mb-6 md:mb-8">
         <h2 className="text-xl font-semibold text-text-primary mb-4">Company Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-sm">
           {(() => {
             const logoUrl = getLogoUrl(company.id, company.logoUrl)
             return logoUrl ? (
@@ -167,13 +167,13 @@ export function CompanyDetailPage() {
                 to={`/projects/${project.id}`}
                 className="block p-4 border border-border rounded-md hover:border-accent/50 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-text-primary mb-1">{project.name}</h3>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-text-primary mb-1 break-words">{project.name}</h3>
                     {project.description && (
-                      <p className="text-sm text-text-secondary mb-2">{project.description}</p>
+                      <p className="text-sm text-text-secondary mb-2 break-words">{project.description}</p>
                     )}
-                    <div className="flex gap-2 text-xs text-text-secondary">
+                    <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
                       {project.startDate && (
                         <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
                       )}
@@ -182,7 +182,7 @@ export function CompanyDetailPage() {
                       )}
                     </div>
                   </div>
-                  <Badge variant={statusColors[project.status] || 'default'}>
+                  <Badge variant={statusColors[project.status] || 'default'} className="self-start">
                     {project.status}
                   </Badge>
                 </div>

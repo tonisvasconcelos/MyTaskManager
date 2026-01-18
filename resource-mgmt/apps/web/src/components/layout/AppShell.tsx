@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { clearAdminToken, clearUserToken, isAdminLoggedIn, isLoggedIn } from '../../shared/api/client'
 
@@ -18,15 +18,49 @@ export function AppShell({ children }: AppShellProps) {
   const location = useLocation()
   const loggedIn = isLoggedIn()
   const adminLoggedIn = isAdminLoggedIn()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   
   // Hide sidebar on login pages
   const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/admin'
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Hamburger Menu Button - hidden on login pages */}
+      {!isLoginPage && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-50 p-2 bg-surface border border-border rounded-md text-text-primary hover:bg-surface/80 transition-colors lg:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            {isSidebarOpen ? (
+              <path d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      )}
+
       {/* Sidebar - hidden on login pages */}
       {!isLoginPage && (
-      <aside className="w-64 bg-surface border-r border-border p-6">
+      <aside className={`bg-surface border-r border-border p-6 transition-all duration-300 ease-in-out ${
+        isSidebarOpen 
+          ? 'w-64' 
+          : 'w-0 overflow-hidden p-0 border-0'
+      } lg:w-64`}>
         <div className="mb-8 flex items-center justify-center min-h-[80px]">
           <img 
             src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
@@ -95,7 +129,7 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       {/* Main content */}
-      <main className={`${isLoginPage ? 'w-full' : 'flex-1'} overflow-auto`}>
+      <main className={`${isLoginPage ? 'w-full' : 'flex-1'} overflow-auto transition-all duration-300`}>
         <div className="p-8">{children}</div>
       </main>
     </div>

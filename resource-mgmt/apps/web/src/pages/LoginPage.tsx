@@ -53,9 +53,14 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
           <img 
-            src="/images/LogoMakr_60iQFv.png" 
+            src={`${import.meta.env.BASE_URL}images/LogoMakr_60iQFv.png`}
             alt="IT Project Company Manager System" 
             className="mx-auto mb-4 h-16 w-auto"
+            onError={(e) => {
+              // Fallback if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
           />
           <h1 className="text-3xl font-bold text-text-primary">IT Project Company Manager System</h1>
           <p className="text-text-secondary mt-2">Sign in to your tenant</p>

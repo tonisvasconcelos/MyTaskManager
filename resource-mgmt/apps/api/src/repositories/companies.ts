@@ -2,10 +2,13 @@ import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
 import type { Company, Prisma } from '@prisma/client';
 
+// Type for Company without logoData (BLOB) for API responses
+type CompanyWithoutLogoData = Omit<Company, 'logoData'>;
+
 export async function findCompanies(
   tenantId: string,
   query: Record<string, string | undefined>
-): Promise<{ data: Company[]; total: number; page: number; pageSize: number }> {
+): Promise<{ data: CompanyWithoutLogoData[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize, skip, take } = parsePagination(query);
   const search = query.search?.trim();
 
@@ -62,7 +65,7 @@ export async function findCompanyById(id: string): Promise<Company | null> {
   return prisma.company.findUnique({ where: { id } });
 }
 
-export async function findCompanyByIdForTenant(tenantId: string, id: string): Promise<Company | null> {
+export async function findCompanyByIdForTenant(tenantId: string, id: string): Promise<CompanyWithoutLogoData | null> {
   return prisma.company.findFirst({
     where: { id, tenantId },
     select: {
@@ -89,13 +92,13 @@ export async function findCompanyByIdForTenant(tenantId: string, id: string): Pr
       createdAt: true,
       updatedAt: true,
     },
-  }) as Company | null;
+  });
 }
 
 export async function createCompany(
   tenantId: string,
   data: Omit<Prisma.CompanyCreateInput, 'tenant'>
-): Promise<Company> {
+): Promise<CompanyWithoutLogoData> {
   return prisma.company.create({
     data: {
       ...data,
@@ -125,10 +128,10 @@ export async function createCompany(
       createdAt: true,
       updatedAt: true,
     },
-  }) as Company;
+  });
 }
 
-export async function updateCompany(id: string, data: Prisma.CompanyUpdateInput): Promise<Company> {
+export async function updateCompany(id: string, data: Prisma.CompanyUpdateInput): Promise<CompanyWithoutLogoData> {
   return prisma.company.update({
     where: { id },
     data,
@@ -156,7 +159,7 @@ export async function updateCompany(id: string, data: Prisma.CompanyUpdateInput)
       createdAt: true,
       updatedAt: true,
     },
-  }) as Company;
+  });
 }
 
 export async function deleteCompany(id: string): Promise<Company> {

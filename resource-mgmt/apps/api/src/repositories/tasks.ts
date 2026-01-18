@@ -40,6 +40,8 @@ export async function findTasks(
               select: {
                 id: true,
                 name: true,
+                logoUrl: true,
+                // Exclude logoData (BLOB) from company in task queries
               },
             },
           },
@@ -92,6 +94,8 @@ export async function findOngoingTasks(
               select: {
                 id: true,
                 name: true,
+                logoUrl: true,
+                // Exclude logoData (BLOB) from company in task queries
               },
             },
           },

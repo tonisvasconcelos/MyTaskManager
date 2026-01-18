@@ -29,38 +29,34 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Hamburger Menu Button - hidden on login pages */}
-      {!isLoginPage && (
-        <button
-          onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 bg-surface border border-border rounded-md text-text-primary hover:bg-surface/80 transition-colors lg:hidden"
-          aria-label="Toggle sidebar"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            {isSidebarOpen ? (
-              <path d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-      )}
-
       {/* Sidebar - hidden on login pages */}
       {!isLoginPage && (
-      <aside className={`bg-surface border-r border-border p-6 transition-all duration-300 ease-in-out ${
+      <aside className={`bg-surface border-r border-border transition-all duration-300 ease-in-out ${
         isSidebarOpen 
           ? 'w-64' 
-          : 'w-0 overflow-hidden p-0 border-0'
-      } lg:w-64`}>
+          : 'w-0 overflow-hidden'
+      }`}>
+        <div className={`p-6 ${!isSidebarOpen ? 'hidden' : ''}`}>
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={toggleSidebar}
+            className="mb-6 p-2 bg-surface/50 border border-border rounded-md text-text-primary hover:bg-surface/80 transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="mb-8 flex items-center justify-center min-h-[80px]">
         <div className="mb-8 flex items-center justify-center min-h-[80px]">
           <img 
             src={`${import.meta.env.BASE_URL || '/'}images/Itaskoralogo.png`}
@@ -125,7 +121,29 @@ export function AppShell({ children }: AppShellProps) {
             </button>
           )}
         </div>
+        </div>
       </aside>
+      )}
+
+      {/* Hamburger Menu Button when sidebar is closed - hidden on login pages */}
+      {!isLoginPage && !isSidebarOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-50 p-2 bg-surface border border-border rounded-md text-text-primary hover:bg-surface/80 transition-colors shadow-lg"
+          aria-label="Toggle sidebar"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       )}
 
       {/* Main content */}

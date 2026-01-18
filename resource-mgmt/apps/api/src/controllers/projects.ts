@@ -35,19 +35,46 @@ export async function createProject(req: Request, res: Response, next: NextFunct
   try {
     const tenantId = req.tenantId!;
     const data = req.body;
-    // Convert date strings to Date objects
-    if (data.startDate && data.startDate !== '') {
-      data.startDate = new Date(data.startDate);
-    } else {
-      data.startDate = null;
-    }
-    if (data.targetEndDate && data.targetEndDate !== '') {
-      data.targetEndDate = new Date(data.targetEndDate);
-    } else {
-      data.targetEndDate = null;
+    
+    // Verify company exists and belongs to tenant
+    const { findCompanyByIdForTenant } = await import('../repositories/companies.js');
+    const company = await findCompanyByIdForTenant(tenantId, data.companyId);
+    if (!company) {
+      throw new NotFoundError('Company', data.companyId);
     }
     
-    const project = await projectRepo.createProject(tenantId, data);
+    // Prepare clean data object for Prisma
+    const projectData: any = {
+      companyId: data.companyId,
+      name: data.name,
+      description: data.description || null,
+      status: data.status || 'Planned',
+    };
+    
+    // Convert date strings to Date objects or null
+    if (data.startDate && data.startDate !== '' && data.startDate !== null) {
+      const startDate = new Date(data.startDate);
+      if (!isNaN(startDate.getTime())) {
+        projectData.startDate = startDate;
+      } else {
+        projectData.startDate = null;
+      }
+    } else {
+      projectData.startDate = null;
+    }
+    
+    if (data.targetEndDate && data.targetEndDate !== '' && data.targetEndDate !== null) {
+      const targetEndDate = new Date(data.targetEndDate);
+      if (!isNaN(targetEndDate.getTime())) {
+        projectData.targetEndDate = targetEndDate;
+      } else {
+        projectData.targetEndDate = null;
+      }
+    } else {
+      projectData.targetEndDate = null;
+    }
+    
+    const project = await projectRepo.createProject(tenantId, projectData);
     res.status(201).json(project);
   } catch (error) {
     next(error);

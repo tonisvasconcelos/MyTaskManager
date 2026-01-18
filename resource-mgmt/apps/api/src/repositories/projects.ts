@@ -66,12 +66,22 @@ export async function findProjectByIdForTenant(tenantId: string, id: string): Pr
 
 export async function createProject(
   tenantId: string,
-  data: Omit<Prisma.ProjectCreateInput, 'tenant'>
+  data: Omit<Prisma.ProjectCreateInput, 'tenant' | 'company'> & { companyId: string }
 ): Promise<Project> {
+  const { companyId, ...restData } = data;
   return prisma.project.create({
     data: {
-      ...data,
+      ...restData,
       tenant: { connect: { id: tenantId } },
+      company: { connect: { id: companyId } },
+    },
+    include: {
+      company: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 }

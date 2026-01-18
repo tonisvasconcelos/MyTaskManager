@@ -7,8 +7,12 @@ export const createProjectSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
     status: z.nativeEnum(ProjectStatus).optional(),
-    startDate: z.string().datetime().optional().or(z.literal('')),
-    targetEndDate: z.string().datetime().optional().or(z.literal('')),
+    startDate: z
+      .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.string().datetime(), z.literal(''), z.null()])
+      .optional(),
+    targetEndDate: z
+      .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.string().datetime(), z.literal(''), z.null()])
+      .optional(),
   }),
 });
 
@@ -21,8 +25,12 @@ export const updateProjectSchema = z.object({
     name: z.string().min(1, 'Name is required').optional(),
     description: z.string().optional(),
     status: z.nativeEnum(ProjectStatus).optional(),
-    startDate: z.string().datetime().optional().or(z.literal('')),
-    targetEndDate: z.string().datetime().optional().or(z.literal('')),
+    startDate: z
+      .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.string().datetime(), z.literal(''), z.null()])
+      .optional(),
+    targetEndDate: z
+      .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.string().datetime(), z.literal(''), z.null()])
+      .optional(),
   }),
 });
 

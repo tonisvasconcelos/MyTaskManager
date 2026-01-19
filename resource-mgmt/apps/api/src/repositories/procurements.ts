@@ -186,7 +186,8 @@ export async function createProcurement(
   }
 ): Promise<ExpenseWithRelations> {
   // Use transaction to ensure atomicity
-  return prisma.$transaction(async (tx) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
     const total = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
     
     // Create expense

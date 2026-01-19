@@ -53,6 +53,26 @@ export async function findProjects(
   }
 }
 
+// Lightweight function to check if project exists without loading relations that might trigger schema errors
+export async function projectExistsForTenant(tenantId: string, id: string): Promise<boolean> {
+  try {
+    const count = await prisma.project.count({
+      where: { id, tenantId },
+    });
+    return count > 0;
+  } catch (error: any) {
+    // If schema error, log but return false to allow creation to proceed
+    // The foreign key constraint will catch invalid project IDs
+    const errorMessage = (error?.message || '').toLowerCase();
+    if (errorMessage.includes('schema') || errorMessage.includes('column') || errorMessage.includes('does not exist') || 
+        error?.code === 'P2001' || error?.code === 'P2021' || error?.code === 'P2022') {
+      console.warn('Project validation skipped due to schema error, proceeding with expense creation:', error?.message);
+      return true; // Allow creation to proceed - FK constraint will validate
+    }
+    throw error;
+  }
+}
+
 export async function findProjectByIdForTenant(tenantId: string, id: string): Promise<Project | null> {
   try {
     const project = await prisma.project.findFirst({

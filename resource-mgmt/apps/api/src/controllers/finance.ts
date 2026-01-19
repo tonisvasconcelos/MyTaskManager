@@ -29,14 +29,15 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
     const projectId = req.query.projectId as string | undefined;
 
     // Get all expenses with allocations
+    // Only include expenses that have at least one allocation
     const expenses = await prisma.expense.findMany({
       where: {
         tenantId,
-        ...(projectId && {
-          allocations: {
-            some: { projectId },
-          },
-        }),
+        allocations: {
+          ...(projectId
+            ? { some: { projectId } }
+            : { some: {} }), // If no projectId, still only get expenses with allocations
+        },
       },
       include: {
         company: {
@@ -58,16 +59,17 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
     });
 
     // Get all payments
+    // Only include payments for expenses that have allocations
     const payments = await prisma.payment.findMany({
       where: {
         tenantId,
-        ...(projectId && {
-          expense: {
-            allocations: {
-              some: { projectId },
-            },
+        expense: {
+          allocations: {
+            ...(projectId
+              ? { some: { projectId } }
+              : { some: {} }), // If no projectId, still only get payments for expenses with allocations
           },
-        }),
+        },
       },
       include: {
         expense: {
@@ -111,29 +113,40 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
 
     // Add expense entries (one per allocation)
     expenses.forEach((expense) => {
+      if (!expense.allocations || expense.allocations.length === 0) {
+        return; // Skip expenses without allocations
+      }
+      
       expense.allocations.forEach((allocation) => {
         if (!projectId || allocation.projectId === projectId) {
           const amount = allocation.allocatedAmount
             ? parseFloat(allocation.allocatedAmount.toString())
             : (parseFloat(expense.totalAmount.toString()) * parseFloat((allocation.allocatedPercentage || 0).toString())) / 100;
           
-          entries.push({
-            id: `${expense.id}-${allocation.id}`,
-            type: 'expense',
-            date: expense.date.toISOString(),
-            amount: -amount, // Negative for expenses
-            description: `Expense: ${expense.invoiceNumber}`,
-            projectId: allocation.projectId,
-            projectName: allocation.project.name,
-            companyName: expense.company.name,
-            invoiceNumber: expense.invoiceNumber,
-          });
+          // Only add entry if amount is valid and greater than 0
+          if (amount > 0) {
+            entries.push({
+              id: `${expense.id}-${allocation.id}`,
+              type: 'expense',
+              date: expense.date.toISOString(),
+              amount: -amount, // Negative for expenses
+              description: `Expense: ${expense.invoiceNumber}`,
+              projectId: allocation.projectId,
+              projectName: allocation.project.name,
+              companyName: expense.company.name,
+              invoiceNumber: expense.invoiceNumber,
+            });
+          }
         }
       });
     });
 
     // Add payment entries (one per project allocation of the related expense)
     payments.forEach((payment) => {
+      if (!payment.expense.allocations || payment.expense.allocations.length === 0) {
+        return; // Skip payments for expenses without allocations
+      }
+      
       payment.expense.allocations.forEach((allocation) => {
         if (!projectId || allocation.projectId === projectId) {
           // Calculate proportional payment amount based on allocation
@@ -144,18 +157,21 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
           const paymentAmount = parseFloat(payment.amount.toString());
           const proportionalAmount = (paymentAmount * allocationAmount) / expenseTotal;
 
-          entries.push({
-            id: `${payment.id}-${allocation.id}`,
-            type: 'payment',
-            date: payment.paymentDate.toISOString(),
-            amount: proportionalAmount,
-            description: `Payment: ${payment.referenceNumber || payment.expense.invoiceNumber}`,
-            projectId: allocation.projectId,
-            projectName: allocation.project.name,
-            companyName: payment.expense.company.name,
-            referenceNumber: payment.referenceNumber || undefined,
-            invoiceNumber: payment.expense.invoiceNumber,
-          });
+          // Only add entry if proportional amount is valid and greater than 0
+          if (proportionalAmount > 0 && expenseTotal > 0) {
+            entries.push({
+              id: `${payment.id}-${allocation.id}`,
+              type: 'payment',
+              date: payment.paymentDate.toISOString(),
+              amount: proportionalAmount,
+              description: `Payment: ${payment.referenceNumber || payment.expense.invoiceNumber}`,
+              projectId: allocation.projectId,
+              projectName: allocation.project.name,
+              companyName: payment.expense.company.name,
+              referenceNumber: payment.referenceNumber || undefined,
+              invoiceNumber: payment.expense.invoiceNumber,
+            });
+          }
         }
       });
     });

@@ -289,6 +289,9 @@ export async function createPayment(
       },
     });
 
+    // Update expense status based on total payments
+    await updateExpenseStatus(data.expenseId);
+
     return payment as PaymentWithRelations;
   } catch (error: any) {
     console.error('Error creating payment:', error);

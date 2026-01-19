@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as procurementsController from '../controllers/procurements.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
+import { requireAdminOrManager } from '../middlewares/requireRole.js';
 import {
   createProcurementSchema,
   updateProcurementSchema,
@@ -24,6 +25,7 @@ procurementsRouter.put(
 );
 procurementsRouter.delete(
   '/:id',
+  requireAdminOrManager,
   validateRequest(deleteProcurementSchema),
   procurementsController.deleteProcurement
 );

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as procurementRepo from '../repositories/procurements.js';
-import { NotFoundError } from '../lib/errors.js';
+import { NotFoundError, ConflictError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getProcurements(req: Request, res: Response, next: NextFunction) {
@@ -68,6 +68,7 @@ export async function createProcurement(req: Request, res: Response, next: NextF
       paymentMethod: data.paymentMethod,
       status: data.status || 'PENDING',
       notes: data.notes || null,
+      documentUrl: data.documentUrl || null,
       allocations: data.allocations.map((alloc: any) => ({
         projectId: alloc.projectId,
         allocatedAmount: alloc.allocatedAmount !== undefined ? alloc.allocatedAmount : null,
@@ -130,6 +131,7 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
+    if (data.documentUrl !== undefined) updateData.documentUrl = data.documentUrl || null;
     if (data.allocations !== undefined) {
       updateData.allocations = data.allocations.map((alloc: any) => ({
         projectId: alloc.projectId,
@@ -152,6 +154,16 @@ export async function deleteProcurement(req: Request, res: Response, next: NextF
     const expense = await procurementRepo.findProcurementByIdForTenant(tenantId, id);
     if (!expense) {
       throw new NotFoundError('Expense', id);
+    }
+
+    // Check if there are any payments associated with this expense
+    // If payments exist, prevent deletion to maintain data integrity
+    const { findPayments } = await import('../repositories/payments.js');
+    const paymentsResult = await findPayments(tenantId, { expenseId: id, page: '1', pageSize: '1' });
+    if (paymentsResult.total > 0) {
+      throw new ConflictError(
+        `Cannot delete expense "${expense.invoiceNumber}" because it has ${paymentsResult.total} associated payment(s). Please delete the payments first.`
+      );
     }
 
     await procurementRepo.deleteProcurement(id);

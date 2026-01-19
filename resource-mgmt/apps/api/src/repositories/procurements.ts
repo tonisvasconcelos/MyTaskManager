@@ -389,6 +389,17 @@ export async function updateProcurement(
 }
 
 export async function deleteProcurement(id: string): Promise<void> {
+  // Verify no payments exist for this expense before deletion
+  // This is a safety check - the controller should have already checked this,
+  // but we add it here as a final safeguard
+  const paymentCount = await prisma.payment.count({
+    where: { expenseId: id },
+  });
+
+  if (paymentCount > 0) {
+    throw new Error(`Cannot delete expense: ${paymentCount} payment(s) are associated with this expense`);
+  }
+
   // Allocations will be cascade deleted
   await prisma.expense.delete({
     where: { id },

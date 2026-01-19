@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
-import type { Payment, Prisma, PaymentMethod } from '@prisma/client';
+import type { Payment, Prisma, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Prisma as PrismaNamespace } from '@prisma/client';
 
 export interface PaymentWithRelations extends Payment {
@@ -155,6 +155,53 @@ export async function findPaymentByIdForTenant(
   }
 }
 
+// Helper function to update expense status based on total payments
+async function updateExpenseStatus(expenseId: string): Promise<void> {
+  try {
+    // Get the expense with its total amount
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+      select: {
+        id: true,
+        totalAmount: true,
+      },
+    });
+
+    if (!expense) {
+      console.warn(`Expense ${expenseId} not found, skipping status update`);
+      return;
+    }
+
+    // Calculate total payments for this expense
+    const payments = await prisma.payment.findMany({
+      where: { expenseId },
+      select: { amount: true },
+    });
+
+    const totalPayments = payments.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+    const expenseTotal = parseFloat(expense.totalAmount.toString());
+
+    // Determine new status
+    let newStatus: PaymentStatus = 'PENDING';
+    if (totalPayments >= expenseTotal) {
+      newStatus = 'PAID';
+    } else if (totalPayments > 0) {
+      newStatus = 'PARTIALLY_PAID';
+    }
+
+    // Update expense status
+    await prisma.expense.update({
+      where: { id: expenseId },
+      data: { status: newStatus },
+    });
+
+    console.log(`Expense ${expenseId} status updated to ${newStatus} (payments: ${totalPayments}, total: ${expenseTotal})`);
+  } catch (error: any) {
+    // Log error but don't fail payment creation if status update fails
+    console.error('Error updating expense status:', error);
+  }
+}
+
 // Helper function to ensure currency columns exist
 async function ensureCurrencyColumnsExist(): Promise<void> {
   try {
@@ -290,6 +337,9 @@ export async function createPayment(
           },
         });
 
+        // Update expense status based on total payments
+        await updateExpenseStatus(data.expenseId);
+
         return payment as PaymentWithRelations;
       } catch (retryError: any) {
         console.error('Error creating payment on retry:', retryError);
@@ -325,6 +375,9 @@ export async function createPayment(
               console.warn('Could not fetch payment relations, returning payment without relations:', fetchError?.message);
             }
             
+            // Update expense status based on total payments
+            await updateExpenseStatus(data.expenseId);
+
             // Return payment without relations if fetch fails
             return {
               ...payment,
@@ -429,6 +482,31 @@ export async function updatePayment(
       },
     });
 
+    // Update expense status based on total payments
+    // If expenseId changed, update both old and new expense statuses
+    if (data.expenseId !== undefined) {
+      // Get the old payment to find the previous expenseId
+      const oldPayment = await prisma.payment.findUnique({
+        where: { id },
+        select: { expenseId: true },
+      });
+      
+      if (oldPayment && oldPayment.expenseId !== data.expenseId) {
+        // Update old expense status
+        await updateExpenseStatus(oldPayment.expenseId);
+      }
+    }
+    
+    // Update current expense status
+    const updatedPayment = await prisma.payment.findUnique({
+      where: { id },
+      select: { expenseId: true },
+    });
+    
+    if (updatedPayment) {
+      await updateExpenseStatus(updatedPayment.expenseId);
+    }
+
     return payment as PaymentWithRelations;
   } catch (error: any) {
     console.error('Error updating payment:', error);
@@ -442,7 +520,18 @@ export async function updatePayment(
 }
 
 export async function deletePayment(tenantId: string, id: string): Promise<void> {
+  // Get the expenseId before deleting
+  const payment = await prisma.payment.findFirst({
+    where: { id, tenantId },
+    select: { expenseId: true },
+  });
+
   await prisma.payment.delete({
     where: { id, tenantId },
   });
+
+  // Update expense status after deletion
+  if (payment) {
+    await updateExpenseStatus(payment.expenseId);
+  }
 }

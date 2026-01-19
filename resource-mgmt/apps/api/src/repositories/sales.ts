@@ -104,7 +104,7 @@ export async function createSale(
 }
 
 export async function updateSale(
-  tenantId: string,
+  _tenantId: string,
   id: string,
   data: {
     companyId?: string;

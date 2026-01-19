@@ -130,7 +130,7 @@ export async function createPayment(
 }
 
 export async function updatePayment(
-  tenantId: string,
+  _tenantId: string,
   id: string,
   data: {
     expenseId?: string;

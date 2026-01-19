@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as procurementRepo from '../repositories/procurements.js';
-import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { NotFoundError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getProcurements(req: Request, res: Response, next: NextFunction) {
@@ -45,13 +45,13 @@ export async function createProcurement(req: Request, res: Response, next: NextF
 
     // Verify all projects exist and belong to tenant
     const { findProjectByIdForTenant } = await import('../repositories/projects.js');
-    const projectIds = data.allocations.map((a: any) => a.projectId);
+    const projectIds = data.allocations.map((a: any) => a.projectId as string);
     const uniqueProjectIds = [...new Set(projectIds)];
 
     for (const projectId of uniqueProjectIds) {
-      const project = await findProjectByIdForTenant(tenantId, projectId);
+      const project = await findProjectByIdForTenant(tenantId, projectId as string);
       if (!project) {
-        throw new NotFoundError('Project', projectId);
+        throw new NotFoundError('Project', projectId as string);
       }
     }
 
@@ -106,13 +106,13 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
     // If allocations are being updated, verify all projects exist and belong to tenant
     if (data.allocations) {
       const { findProjectByIdForTenant } = await import('../repositories/projects.js');
-      const projectIds = data.allocations.map((a: any) => a.projectId);
+      const projectIds = data.allocations.map((a: any) => a.projectId as string);
       const uniqueProjectIds = [...new Set(projectIds)];
 
       for (const projectId of uniqueProjectIds) {
-        const project = await findProjectByIdForTenant(tenantId, projectId);
+        const project = await findProjectByIdForTenant(tenantId, projectId as string);
         if (!project) {
-          throw new NotFoundError('Project', projectId);
+          throw new NotFoundError('Project', projectId as string);
         }
       }
     }

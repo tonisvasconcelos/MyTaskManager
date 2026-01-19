@@ -315,7 +315,13 @@ export function ProjectDetailPage() {
                     {expensesData
                       .reduce((sum, expense) => {
                         const allocation = expense.allocations?.find((a) => a.projectId === id)
-                        return sum + (allocation ? parseFloat(allocation.allocatedAmount) : 0)
+                        if (!allocation) return sum
+                        if (allocation.allocatedAmount) {
+                          return sum + parseFloat(allocation.allocatedAmount)
+                        } else if (allocation.allocatedPercentage) {
+                          return sum + (parseFloat(expense.totalAmount) * parseFloat(allocation.allocatedPercentage) / 100)
+                        }
+                        return sum
                       }, 0)
                       .toFixed(2)}
                   </span>
@@ -340,7 +346,13 @@ export function ProjectDetailPage() {
                               {t('procurements.date')}: {new Date(expense.date).toLocaleDateString()}
                             </span>
                             <span>
-                              {t('procurements.allocatedAmount')}: ${parseFloat(allocation.allocatedAmount).toFixed(2)}
+                              {t('procurements.allocatedAmount')}: $
+                              {allocation.allocatedAmount
+                                ? parseFloat(allocation.allocatedAmount).toFixed(2)
+                                : allocation.allocatedPercentage
+                                  ? (parseFloat(expense.totalAmount) * parseFloat(allocation.allocatedPercentage) / 100).toFixed(2)
+                                  : '0.00'}
+                              {allocation.allocatedPercentage && ` (${parseFloat(allocation.allocatedPercentage).toFixed(2)}%)`}
                             </span>
                             <span>
                               {t('procurements.totalAmount')}: ${parseFloat(expense.totalAmount).toFixed(2)}

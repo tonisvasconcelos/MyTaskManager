@@ -31,7 +31,7 @@ export function useCreateProcurement() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'company' | 'allocations'> & {
-      allocations: Array<{ projectId: string; allocatedAmount: number | string }>
+      allocations: Array<{ projectId: string; allocatedAmount?: number | string | null; allocatedPercentage?: number | string | null }>
     }) => apiClient.post<Expense>('/procurements', data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['procurements'] })
@@ -50,7 +50,7 @@ export function useUpdateProcurement() {
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Expense> & {
       id: string
-      allocations?: Array<{ projectId: string; allocatedAmount: number | string }>
+      allocations?: Array<{ projectId: string; allocatedAmount?: number | string | null; allocatedPercentage?: number | string | null }>
     }) => apiClient.put<Expense>(`/procurements/${id}`, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['procurements'] })

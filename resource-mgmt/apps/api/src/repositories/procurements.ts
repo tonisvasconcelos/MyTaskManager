@@ -10,7 +10,8 @@ export interface ExpenseWithRelations extends Expense {
   allocations: Array<{
     id: string;
     projectId: string;
-    allocatedAmount: number;
+    allocatedAmount: number | null;
+    allocatedPercentage: number | null;
     project: {
       id: string;
       name: string;
@@ -109,18 +110,25 @@ export async function createProcurement(
     companyId: string;
     invoiceNumber: string;
     date: Date | string;
+    dueDate?: Date | string | null;
+    refStartDate?: Date | string | null;
+    refEndDate?: Date | string | null;
+    invoiceCurrencyCode?: string | null;
     totalAmount: number | string;
     paymentMethod: PaymentMethod;
     status?: PaymentStatus;
     notes?: string | null;
     allocations: Array<{
       projectId: string;
-      allocatedAmount: number | string;
+      allocatedAmount?: number | string | null;
+      allocatedPercentage?: number | string | null;
     }>;
   }
 ): Promise<ExpenseWithRelations> {
   // Use transaction to ensure atomicity
   return prisma.$transaction(async (tx) => {
+    const total = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
+    
     // Create expense
     const expense = await tx.expense.create({
       data: {
@@ -128,22 +136,42 @@ export async function createProcurement(
         companyId: data.companyId,
         invoiceNumber: data.invoiceNumber,
         date: typeof data.date === 'string' ? new Date(data.date) : data.date,
-        totalAmount: typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount,
+        dueDate: data.dueDate ? (typeof data.dueDate === 'string' ? new Date(data.dueDate) : data.dueDate) : null,
+        refStartDate: data.refStartDate ? (typeof data.refStartDate === 'string' ? new Date(data.refStartDate) : data.refStartDate) : null,
+        refEndDate: data.refEndDate ? (typeof data.refEndDate === 'string' ? new Date(data.refEndDate) : data.refEndDate) : null,
+        invoiceCurrencyCode: data.invoiceCurrencyCode || null,
+        totalAmount: total,
         paymentMethod: data.paymentMethod,
         status: data.status || 'PENDING',
         notes: data.notes || null,
       },
     });
 
-    // Create allocations
+    // Create allocations - calculate amount from percentage if needed
     await tx.expenseAllocation.createMany({
-      data: data.allocations.map((alloc) => ({
-        expenseId: expense.id,
-        projectId: alloc.projectId,
-        allocatedAmount: typeof alloc.allocatedAmount === 'string'
-          ? parseFloat(alloc.allocatedAmount)
-          : alloc.allocatedAmount,
-      })),
+      data: data.allocations.map((alloc) => {
+        let allocatedAmount: number | null = null;
+        let allocatedPercentage: number | null = null;
+        
+        if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
+          allocatedAmount = typeof alloc.allocatedAmount === 'string'
+            ? parseFloat(alloc.allocatedAmount)
+            : alloc.allocatedAmount;
+        } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
+          allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
+            ? parseFloat(alloc.allocatedPercentage)
+            : alloc.allocatedPercentage;
+          // Calculate amount from percentage
+          allocatedAmount = (total * allocatedPercentage) / 100;
+        }
+        
+        return {
+          expenseId: expense.id,
+          projectId: alloc.projectId,
+          allocatedAmount,
+          allocatedPercentage,
+        };
+      }),
     });
 
     // Fetch with relations
@@ -179,23 +207,46 @@ export async function updateProcurement(
     companyId?: string;
     invoiceNumber?: string;
     date?: Date | string;
+    dueDate?: Date | string | null;
+    refStartDate?: Date | string | null;
+    refEndDate?: Date | string | null;
+    invoiceCurrencyCode?: string | null;
     totalAmount?: number | string;
     paymentMethod?: PaymentMethod;
     status?: PaymentStatus;
     notes?: string | null;
     allocations?: Array<{
       projectId: string;
-      allocatedAmount: number | string;
+      allocatedAmount?: number | string | null;
+      allocatedPercentage?: number | string | null;
     }>;
   }
 ): Promise<ExpenseWithRelations> {
   return prisma.$transaction(async (tx) => {
+    // Get current expense to use totalAmount for percentage calculations if needed
+    const currentExpense = await tx.expense.findUnique({ where: { id } });
+    const total = data.totalAmount !== undefined
+      ? (typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount)
+      : (currentExpense ? parseFloat(currentExpense.totalAmount.toString()) : 0);
+    
     // Prepare update data
     const updateData: Prisma.ExpenseUpdateInput = {};
     if (data.companyId !== undefined) updateData.company = { connect: { id: data.companyId } };
     if (data.invoiceNumber !== undefined) updateData.invoiceNumber = data.invoiceNumber;
     if (data.date !== undefined) {
       updateData.date = typeof data.date === 'string' ? new Date(data.date) : data.date;
+    }
+    if (data.dueDate !== undefined) {
+      updateData.dueDate = data.dueDate ? (typeof data.dueDate === 'string' ? new Date(data.dueDate) : data.dueDate) : null;
+    }
+    if (data.refStartDate !== undefined) {
+      updateData.refStartDate = data.refStartDate ? (typeof data.refStartDate === 'string' ? new Date(data.refStartDate) : data.refStartDate) : null;
+    }
+    if (data.refEndDate !== undefined) {
+      updateData.refEndDate = data.refEndDate ? (typeof data.refEndDate === 'string' ? new Date(data.refEndDate) : data.refEndDate) : null;
+    }
+    if (data.invoiceCurrencyCode !== undefined) {
+      updateData.invoiceCurrencyCode = data.invoiceCurrencyCode || null;
     }
     if (data.totalAmount !== undefined) {
       updateData.totalAmount = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
@@ -217,16 +268,32 @@ export async function updateProcurement(
         where: { expenseId: id },
       });
 
-      // Create new allocations
+      // Create new allocations - calculate amount from percentage if needed
       if (data.allocations.length > 0) {
         await tx.expenseAllocation.createMany({
-          data: data.allocations.map((alloc) => ({
-            expenseId: id,
-            projectId: alloc.projectId,
-            allocatedAmount: typeof alloc.allocatedAmount === 'string'
-              ? parseFloat(alloc.allocatedAmount)
-              : alloc.allocatedAmount,
-          })),
+          data: data.allocations.map((alloc) => {
+            let allocatedAmount: number | null = null;
+            let allocatedPercentage: number | null = null;
+            
+            if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
+              allocatedAmount = typeof alloc.allocatedAmount === 'string'
+                ? parseFloat(alloc.allocatedAmount)
+                : alloc.allocatedAmount;
+            } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
+              allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
+                ? parseFloat(alloc.allocatedPercentage)
+                : alloc.allocatedPercentage;
+              // Calculate amount from percentage
+              allocatedAmount = (total * allocatedPercentage) / 100;
+            }
+            
+            return {
+              expenseId: id,
+              projectId: alloc.projectId,
+              allocatedAmount,
+              allocatedPercentage,
+            };
+          }),
         });
       }
     }

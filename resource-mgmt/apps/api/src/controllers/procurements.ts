@@ -60,13 +60,18 @@ export async function createProcurement(req: Request, res: Response, next: NextF
       companyId: data.companyId,
       invoiceNumber: data.invoiceNumber,
       date: data.date,
+      dueDate: data.dueDate || null,
+      refStartDate: data.refStartDate || null,
+      refEndDate: data.refEndDate || null,
+      invoiceCurrencyCode: data.invoiceCurrencyCode || null,
       totalAmount: data.totalAmount,
       paymentMethod: data.paymentMethod,
       status: data.status || 'PENDING',
       notes: data.notes || null,
       allocations: data.allocations.map((alloc: any) => ({
         projectId: alloc.projectId,
-        allocatedAmount: alloc.allocatedAmount,
+        allocatedAmount: alloc.allocatedAmount !== undefined ? alloc.allocatedAmount : null,
+        allocatedPercentage: alloc.allocatedPercentage !== undefined ? alloc.allocatedPercentage : null,
       })),
     };
 
@@ -117,6 +122,10 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
     if (data.companyId !== undefined) updateData.companyId = data.companyId;
     if (data.invoiceNumber !== undefined) updateData.invoiceNumber = data.invoiceNumber;
     if (data.date !== undefined) updateData.date = data.date;
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate || null;
+    if (data.refStartDate !== undefined) updateData.refStartDate = data.refStartDate || null;
+    if (data.refEndDate !== undefined) updateData.refEndDate = data.refEndDate || null;
+    if (data.invoiceCurrencyCode !== undefined) updateData.invoiceCurrencyCode = data.invoiceCurrencyCode || null;
     if (data.totalAmount !== undefined) updateData.totalAmount = data.totalAmount;
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
@@ -124,7 +133,8 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
     if (data.allocations !== undefined) {
       updateData.allocations = data.allocations.map((alloc: any) => ({
         projectId: alloc.projectId,
-        allocatedAmount: alloc.allocatedAmount,
+        allocatedAmount: alloc.allocatedAmount !== undefined ? alloc.allocatedAmount : null,
+        allocatedPercentage: alloc.allocatedPercentage !== undefined ? alloc.allocatedPercentage : null,
       }));
     }
 

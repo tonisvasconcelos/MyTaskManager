@@ -60,8 +60,16 @@ export function ProcurementsPage() {
 
   const getTotalAllocated = (expense: Expense) => {
     if (!expense.allocations || expense.allocations.length === 0) return '0.00'
+    const total = parseFloat(expense.totalAmount)
     return expense.allocations
-      .reduce((sum, alloc) => sum + parseFloat(alloc.allocatedAmount), 0)
+      .reduce((sum, alloc) => {
+        if (alloc.allocatedAmount) {
+          return sum + parseFloat(alloc.allocatedAmount)
+        } else if (alloc.allocatedPercentage) {
+          return sum + (total * parseFloat(alloc.allocatedPercentage) / 100)
+        }
+        return sum
+      }, 0)
       .toFixed(2)
   }
 

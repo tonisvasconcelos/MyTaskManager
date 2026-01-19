@@ -152,7 +152,8 @@ export interface ExpenseAllocation {
   id: string
   expenseId: string
   projectId: string
-  allocatedAmount: string
+  allocatedAmount: string | null
+  allocatedPercentage: string | null
   project?: {
     id: string
     name: string
@@ -165,6 +166,10 @@ export interface Expense {
   companyId: string
   invoiceNumber: string
   date: string
+  dueDate: string | null
+  refStartDate: string | null
+  refEndDate: string | null
+  invoiceCurrencyCode: string | null
   totalAmount: string
   paymentMethod: PaymentMethod
   status: PaymentStatus

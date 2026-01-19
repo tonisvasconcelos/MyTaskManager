@@ -16,7 +16,8 @@ import type { Expense } from '../../shared/types/api'
 
 const allocationSchema = z.object({
   projectId: z.string().uuid('Invalid project ID'),
-  allocatedAmount: z.union([z.string(), z.number()]).transform((val) => {
+  allocatedAmount: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined
     const num = typeof val === 'string' ? parseFloat(val) : val
     if (isNaN(num) || num <= 0) {
       throw new z.ZodError([
@@ -29,13 +30,42 @@ const allocationSchema = z.object({
     }
     return num
   }),
-})
+  allocatedPercentage: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined
+    const num = typeof val === 'string' ? parseFloat(val) : val
+    if (isNaN(num) || num < 0 || num > 100) {
+      throw new z.ZodError([
+        {
+          code: 'custom',
+          path: ['allocatedPercentage'],
+          message: 'Allocated percentage must be between 0 and 100',
+        },
+      ])
+    }
+    return num
+  }),
+}).refine(
+  (data) => {
+    // Either allocatedAmount or allocatedPercentage must be provided, but not both
+    const hasAmount = data.allocatedAmount !== undefined && data.allocatedAmount !== null
+    const hasPercentage = data.allocatedPercentage !== undefined && data.allocatedPercentage !== null
+    return hasAmount !== hasPercentage // XOR: exactly one must be provided
+  },
+  {
+    message: 'Either allocated amount or allocated percentage must be provided, but not both',
+    path: ['allocatedAmount'],
+  }
+)
 
 const procurementSchema = z
   .object({
     companyId: z.string().uuid('Company is required'),
     invoiceNumber: z.string().min(1, 'Invoice number is required'),
     date: z.string().min(1, 'Date is required'),
+    dueDate: z.string().optional().nullable(),
+    refStartDate: z.string().optional().nullable(),
+    refEndDate: z.string().optional().nullable(),
+    invoiceCurrencyCode: z.string().max(3, 'Currency code must be 3 characters').optional().nullable(),
     totalAmount: z.union([z.string(), z.number()]).transform((val) => {
       const num = typeof val === 'string' ? parseFloat(val) : val
       if (isNaN(num) || num <= 0) {
@@ -58,8 +88,14 @@ const procurementSchema = z
     (data) => {
       const total = typeof data.totalAmount === 'number' ? data.totalAmount : parseFloat(data.totalAmount)
       const sum = data.allocations.reduce((acc, alloc) => {
-        const amount = typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount)
-        return acc + amount
+        if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
+          const amount = typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount)
+          return acc + amount
+        } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
+          const percentage = typeof alloc.allocatedPercentage === 'number' ? alloc.allocatedPercentage : parseFloat(alloc.allocatedPercentage)
+          return acc + (total * percentage / 100)
+        }
+        return acc
       }, 0)
       return Math.abs(total - sum) < 0.01
     },
@@ -112,11 +148,15 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
       companyId: '',
       invoiceNumber: '',
       date: new Date().toISOString().split('T')[0],
+      dueDate: null,
+      refStartDate: null,
+      refEndDate: null,
+      invoiceCurrencyCode: null,
       totalAmount: 0,
       paymentMethod: 'CORPORATE_CREDIT_CARD',
       status: 'PENDING',
       notes: '',
-      allocations: [{ projectId: '', allocatedAmount: 0 }],
+      allocations: [{ projectId: '', allocatedAmount: undefined, allocatedPercentage: undefined }],
     },
   })
 
@@ -128,10 +168,18 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
   const totalAmount = watch('totalAmount')
   const allocations = watch('allocations')
 
-  // Calculate sum of allocations
+  // Calculate sum of allocations (from amounts or percentages)
   const allocatedSum = allocations.reduce((sum, alloc) => {
-    const amount = typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount || '0')
-    return sum + (isNaN(amount) ? 0 : amount)
+    const total = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount || '0')
+    
+    if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
+      const amount = typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount || '0')
+      return sum + (isNaN(amount) ? 0 : amount)
+    } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
+      const percentage = typeof alloc.allocatedPercentage === 'number' ? alloc.allocatedPercentage : parseFloat(alloc.allocatedPercentage || '0')
+      return sum + (total * percentage / 100)
+    }
+    return sum
   }, 0)
 
   const remaining = (typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount || '0')) - allocatedSum
@@ -142,6 +190,10 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
         companyId: expense.companyId,
         invoiceNumber: expense.invoiceNumber,
         date: new Date(expense.date).toISOString().split('T')[0],
+        dueDate: expense.dueDate ? new Date(expense.dueDate).toISOString().split('T')[0] : null,
+        refStartDate: expense.refStartDate ? new Date(expense.refStartDate).toISOString().split('T')[0] : null,
+        refEndDate: expense.refEndDate ? new Date(expense.refEndDate).toISOString().split('T')[0] : null,
+        invoiceCurrencyCode: expense.invoiceCurrencyCode || null,
         totalAmount: parseFloat(expense.totalAmount),
         paymentMethod: expense.paymentMethod,
         status: expense.status,
@@ -150,20 +202,25 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
           expense.allocations && expense.allocations.length > 0
             ? expense.allocations.map((alloc) => ({
                 projectId: alloc.projectId,
-                allocatedAmount: parseFloat(alloc.allocatedAmount),
+                allocatedAmount: alloc.allocatedAmount ? parseFloat(alloc.allocatedAmount) : undefined,
+                allocatedPercentage: alloc.allocatedPercentage ? parseFloat(alloc.allocatedPercentage) : undefined,
               }))
-            : [{ projectId: '', allocatedAmount: 0 }],
+            : [{ projectId: '', allocatedAmount: undefined, allocatedPercentage: undefined }],
       })
     } else if (!expense && isOpen) {
       reset({
         companyId: '',
         invoiceNumber: '',
         date: new Date().toISOString().split('T')[0],
+        dueDate: null,
+        refStartDate: null,
+        refEndDate: null,
+        invoiceCurrencyCode: null,
         totalAmount: 0,
         paymentMethod: 'CORPORATE_CREDIT_CARD',
         status: 'PENDING',
         notes: '',
-        allocations: [{ projectId: '', allocatedAmount: 0 }],
+        allocations: [{ projectId: '', allocatedAmount: undefined, allocatedPercentage: undefined }],
       })
     }
   }, [expense, isOpen, reset])
@@ -173,9 +230,18 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
       const payload = {
         ...data,
         totalAmount: typeof data.totalAmount === 'number' ? data.totalAmount.toString() : data.totalAmount,
+        dueDate: data.dueDate || null,
+        refStartDate: data.refStartDate || null,
+        refEndDate: data.refEndDate || null,
+        invoiceCurrencyCode: data.invoiceCurrencyCode || null,
         allocations: data.allocations.map((alloc) => ({
           projectId: alloc.projectId,
-          allocatedAmount: typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount),
+          allocatedAmount: alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null
+            ? (typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount))
+            : null,
+          allocatedPercentage: alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null
+            ? (typeof alloc.allocatedPercentage === 'number' ? alloc.allocatedPercentage : parseFloat(alloc.allocatedPercentage))
+            : null,
         })),
       }
 
@@ -233,21 +299,54 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
             error={errors.invoiceNumber?.message}
           />
 
-          <Input
-            label={`${t('procurements.date')} *`}
-            type="date"
-            {...register('date')}
-            error={errors.date?.message}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={`${t('procurements.date')} *`}
+              type="date"
+              {...register('date')}
+              error={errors.date?.message}
+            />
+            <Input
+              label={t('procurements.dueDate')}
+              type="date"
+              {...register('dueDate')}
+              error={errors.dueDate?.message}
+            />
+          </div>
 
-          <Input
-            label={`${t('procurements.totalAmount')} *`}
-            type="number"
-            step="0.01"
-            min="0"
-            {...register('totalAmount', { valueAsNumber: true })}
-            error={errors.totalAmount?.message}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={t('procurements.refStartDate')}
+              type="date"
+              {...register('refStartDate')}
+              error={errors.refStartDate?.message}
+            />
+            <Input
+              label={t('procurements.refEndDate')}
+              type="date"
+              {...register('refEndDate')}
+              error={errors.refEndDate?.message}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={`${t('procurements.totalAmount')} *`}
+              type="number"
+              step="0.01"
+              min="0"
+              {...register('totalAmount', { valueAsNumber: true })}
+              error={errors.totalAmount?.message}
+            />
+            <Input
+              label={t('procurements.invoiceCurrencyCode')}
+              type="text"
+              maxLength={3}
+              placeholder="USD"
+              {...register('invoiceCurrencyCode')}
+              error={errors.invoiceCurrencyCode?.message}
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
@@ -288,44 +387,99 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => append({ projectId: '', allocatedAmount: 0 })}
+                onClick={() => append({ projectId: '', allocatedAmount: undefined, allocatedPercentage: undefined })}
               >
                 {t('procurements.addAllocation')}
               </Button>
             </div>
 
-            {fields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <Select
-                  label={t('procurements.project')}
-                  {...register(`allocations.${index}.projectId`)}
-                  error={errors.allocations?.[index]?.projectId?.message}
-                  options={[
-                    { value: '', label: t('common.all') },
-                    ...projects.map((p) => ({ value: p.id, label: p.name })),
-                  ]}
-                />
-                <Input
-                  label={t('procurements.allocatedAmount')}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register(`allocations.${index}.allocatedAmount`, { valueAsNumber: true })}
-                  error={errors.allocations?.[index]?.allocatedAmount?.message}
-                />
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    disabled={fields.length === 1}
-                  >
-                    {t('procurements.removeAllocation')}
-                  </Button>
+            {fields.map((field, index) => {
+              const allocation = allocations[index]
+              const total = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount || '0')
+              
+              // Determine which field is being used
+              const hasPercentage = allocation?.allocatedPercentage !== undefined && allocation?.allocatedPercentage !== null
+              const hasAmount = allocation?.allocatedAmount !== undefined && allocation?.allocatedAmount !== null
+              
+              // Calculate display values
+              const displayAmount = hasAmount
+                ? (typeof allocation.allocatedAmount === 'number' ? allocation.allocatedAmount : parseFloat(allocation.allocatedAmount || '0'))
+                : (hasPercentage && total > 0
+                  ? (total * (typeof allocation.allocatedPercentage === 'number' ? allocation.allocatedPercentage : parseFloat(allocation.allocatedPercentage || '0')) / 100)
+                  : 0)
+              
+              const displayPercentage = hasPercentage
+                ? (typeof allocation.allocatedPercentage === 'number' ? allocation.allocatedPercentage : parseFloat(allocation.allocatedPercentage || '0'))
+                : (hasAmount && total > 0
+                  ? ((displayAmount / total) * 100)
+                  : 0)
+
+              return (
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <Select
+                    label={t('procurements.project')}
+                    {...register(`allocations.${index}.projectId`)}
+                    error={errors.allocations?.[index]?.projectId?.message}
+                    options={[
+                      { value: '', label: t('common.all') },
+                      ...projects.map((p) => ({ value: p.id, label: p.name })),
+                    ]}
+                  />
+                  <Input
+                    label={t('procurements.allocatedAmount')}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={hasPercentage ? displayAmount.toFixed(2) : (hasAmount ? displayAmount : '')}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === '') {
+                        setValue(`allocations.${index}.allocatedAmount`, undefined, { shouldValidate: true })
+                        setValue(`allocations.${index}.allocatedPercentage`, undefined, { shouldValidate: true })
+                      } else {
+                        const amount = parseFloat(value)
+                        setValue(`allocations.${index}.allocatedAmount`, amount, { shouldValidate: true })
+                        setValue(`allocations.${index}.allocatedPercentage`, undefined, { shouldValidate: true })
+                      }
+                    }}
+                    error={errors.allocations?.[index]?.allocatedAmount?.message}
+                    disabled={hasPercentage}
+                  />
+                  <Input
+                    label={`${t('procurements.allocatedPercentage')} (%)`}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={hasAmount ? displayPercentage.toFixed(2) : (hasPercentage ? displayPercentage : '')}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === '') {
+                        setValue(`allocations.${index}.allocatedAmount`, undefined, { shouldValidate: true })
+                        setValue(`allocations.${index}.allocatedPercentage`, undefined, { shouldValidate: true })
+                      } else {
+                        const percentage = parseFloat(value)
+                        setValue(`allocations.${index}.allocatedPercentage`, percentage, { shouldValidate: true })
+                        setValue(`allocations.${index}.allocatedAmount`, undefined, { shouldValidate: true })
+                      }
+                    }}
+                    error={errors.allocations?.[index]?.allocatedPercentage?.message}
+                    disabled={hasAmount}
+                  />
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      disabled={fields.length === 1}
+                    >
+                      {t('procurements.removeAllocation')}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {errors.allocations && typeof errors.allocations.message === 'string' && (
               <p className="text-sm text-red-400 mb-2">{errors.allocations.message}</p>

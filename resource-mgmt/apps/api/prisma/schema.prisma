@@ -227,17 +227,21 @@ model TimeEntry {
 }
 
 model Expense {
-  id            String         @id @default(uuid())
-  tenantId      String
-  companyId     String
-  invoiceNumber String
-  date          DateTime
-  totalAmount   Decimal        @db.Decimal(10,2)
-  paymentMethod PaymentMethod
-  status        PaymentStatus  @default(PENDING)
-  notes         String?        @db.Text
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                  String         @id @default(uuid())
+  tenantId            String
+  companyId           String
+  invoiceNumber       String
+  date                DateTime
+  dueDate             DateTime?
+  refStartDate        DateTime?
+  refEndDate          DateTime?
+  invoiceCurrencyCode String?        @db.VarChar(3)
+  totalAmount         Decimal        @db.Decimal(10,2)
+  paymentMethod       PaymentMethod
+  status              PaymentStatus  @default(PENDING)
+  notes               String?        @db.Text
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -249,10 +253,11 @@ model Expense {
 }
 
 model ExpenseAllocation {
-  id        String   @id @default(uuid())
-  expenseId String
-  projectId String
-  allocatedAmount Decimal @db.Decimal(10,2)
+  id              String   @id @default(uuid())
+  expenseId       String
+  projectId       String
+  allocatedAmount Decimal? @db.Decimal(10,2)
+  allocatedPercentage Decimal? @db.Decimal(5,2) // Percentage (0-100)
 
   expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

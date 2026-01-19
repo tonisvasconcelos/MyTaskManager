@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
 import type { Expense, Prisma, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Prisma as PrismaNamespace } from '@prisma/client';
+import { ValidationError } from '../lib/errors.js';
 
 export interface ExpenseWithRelations extends Expense {
   company: {
@@ -60,6 +61,97 @@ function isSchemaError(error: any): boolean {
   const hasSchemaKeywords = schemaKeywords.some(keyword => errorMessage.includes(keyword));
   
   return hasSchemaKeywords;
+}
+
+function parseDecimalInput(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const normalized = trimmed.replace(',', '.');
+    const num = parseFloat(normalized);
+    return Number.isFinite(num) ? num : null;
+  }
+  return null;
+}
+
+function normalizeAllocationsForCreateMany(
+  allocations: Array<{
+    projectId: string;
+    allocatedAmount?: number | string | null;
+    allocatedPercentage?: number | string | null;
+  }>,
+  totalAmount: number
+): Array<{
+  expenseId: string;
+  projectId: string;
+  allocatedAmount: number | null;
+  allocatedPercentage: number | null;
+}> {
+  const normalized = allocations.map((alloc) => {
+    const allocatedAmount = parseDecimalInput(alloc.allocatedAmount);
+    const allocatedPercentage = parseDecimalInput(alloc.allocatedPercentage);
+
+    // Defensive: treat empty string / NaN as missing
+    const hasAmount = allocatedAmount !== null;
+    const hasPercentage = allocatedPercentage !== null;
+
+    if (!alloc.projectId) {
+      throw new ValidationError('Allocation projectId is required');
+    }
+
+    if (hasAmount && hasPercentage) {
+      // UI may display both values; accept it by preferring amount and deriving percentage
+      const derivedPercentage = totalAmount > 0 ? (allocatedAmount! / totalAmount) * 100 : null;
+      return {
+        expenseId: '',
+        projectId: alloc.projectId,
+        allocatedAmount: allocatedAmount!,
+        allocatedPercentage:
+          derivedPercentage !== null && Number.isFinite(derivedPercentage) ? derivedPercentage : allocatedPercentage!,
+      };
+    }
+
+    if (hasAmount) {
+      if (allocatedAmount! <= 0) {
+        throw new ValidationError('Allocated amount must be a positive number');
+      }
+      const derivedPercentage = totalAmount > 0 ? (allocatedAmount! / totalAmount) * 100 : null;
+      return {
+        expenseId: '',
+        projectId: alloc.projectId,
+        allocatedAmount: allocatedAmount!,
+        allocatedPercentage: derivedPercentage !== null && Number.isFinite(derivedPercentage) ? derivedPercentage : null,
+      };
+    }
+
+    if (hasPercentage) {
+      if (allocatedPercentage! < 0 || allocatedPercentage! > 100) {
+        throw new ValidationError('Allocated percentage must be between 0 and 100');
+      }
+      const computedAmount = (totalAmount * allocatedPercentage!) / 100;
+      return {
+        expenseId: '',
+        projectId: alloc.projectId,
+        allocatedAmount: Number.isFinite(computedAmount) ? computedAmount : null,
+        allocatedPercentage: allocatedPercentage!,
+      };
+    }
+
+    throw new ValidationError('Either allocated amount or allocated percentage must be provided');
+  });
+
+  // Validate that sum of computed amounts matches total (tolerance 0.01)
+  const sum = normalized.reduce((acc, a) => acc + (a.allocatedAmount ?? 0), 0);
+  if (Number.isFinite(totalAmount) && Math.abs(totalAmount - sum) >= 0.01) {
+    throw new ValidationError('Sum of allocations must equal total amount', {
+      totalAmount,
+      sum,
+    });
+  }
+
+  return normalized;
 }
 
 export async function findProcurements(
@@ -188,7 +280,10 @@ export async function createProcurement(
   // Use transaction to ensure atomicity
   try {
     return await prisma.$transaction(async (tx) => {
-      const total = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
+      const total = parseDecimalInput(data.totalAmount) ?? 0;
+      if (!Number.isFinite(total) || total <= 0) {
+        throw new ValidationError('Total amount must be a positive number');
+      }
       
       // Prepare expense data - conditionally include documentUrl
       const expenseData: any = {
@@ -234,30 +329,12 @@ export async function createProcurement(
       }
 
       // Create allocations - calculate amount from percentage if needed
+      const normalizedAllocations = normalizeAllocationsForCreateMany(data.allocations, total);
       await tx.expenseAllocation.createMany({
-        data: data.allocations.map((alloc) => {
-          let allocatedAmount: number | null = null;
-          let allocatedPercentage: number | null = null;
-          
-          if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
-            allocatedAmount = typeof alloc.allocatedAmount === 'string'
-              ? parseFloat(alloc.allocatedAmount)
-              : alloc.allocatedAmount;
-          } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
-            allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
-              ? parseFloat(alloc.allocatedPercentage)
-              : alloc.allocatedPercentage;
-            // Calculate amount from percentage
-            allocatedAmount = (total * allocatedPercentage) / 100;
-          }
-          
-          return {
-            expenseId: expense.id,
-            projectId: alloc.projectId,
-            allocatedAmount,
-            allocatedPercentage,
-          };
-        }),
+        data: normalizedAllocations.map((a) => ({
+          ...a,
+          expenseId: expense.id,
+        })),
       });
 
       // Fetch with relations
@@ -327,7 +404,7 @@ export async function updateProcurement(
     // Get current expense to use totalAmount for percentage calculations if needed
     const currentExpense = await tx.expense.findUnique({ where: { id } });
     const total = data.totalAmount !== undefined
-      ? (typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount)
+      ? (parseDecimalInput(data.totalAmount) ?? 0)
       : (currentExpense ? parseFloat(currentExpense.totalAmount.toString()) : 0);
     
     // Prepare update data
@@ -350,7 +427,11 @@ export async function updateProcurement(
       updateData.invoiceCurrencyCode = data.invoiceCurrencyCode || null;
     }
     if (data.totalAmount !== undefined) {
-      updateData.totalAmount = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
+      const parsedTotal = parseDecimalInput(data.totalAmount);
+      if (parsedTotal === null || !Number.isFinite(parsedTotal) || parsedTotal <= 0) {
+        throw new ValidationError('Total amount must be a positive number');
+      }
+      updateData.totalAmount = parsedTotal;
     }
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
@@ -372,30 +453,12 @@ export async function updateProcurement(
 
       // Create new allocations - calculate amount from percentage if needed
       if (data.allocations.length > 0) {
+        const normalizedAllocations = normalizeAllocationsForCreateMany(data.allocations, total).map((a) => ({
+          ...a,
+          expenseId: id,
+        }));
         await tx.expenseAllocation.createMany({
-          data: data.allocations.map((alloc) => {
-            let allocatedAmount: number | null = null;
-            let allocatedPercentage: number | null = null;
-            
-            if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
-              allocatedAmount = typeof alloc.allocatedAmount === 'string'
-                ? parseFloat(alloc.allocatedAmount)
-                : alloc.allocatedAmount;
-            } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
-              allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
-                ? parseFloat(alloc.allocatedPercentage)
-                : alloc.allocatedPercentage;
-              // Calculate amount from percentage
-              allocatedAmount = (total * allocatedPercentage) / 100;
-            }
-            
-            return {
-              expenseId: id,
-              projectId: alloc.projectId,
-              allocatedAmount,
-              allocatedPercentage,
-            };
-          }),
+          data: normalizedAllocations,
         });
       }
     }

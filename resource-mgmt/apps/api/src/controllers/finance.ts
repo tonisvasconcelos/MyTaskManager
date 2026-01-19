@@ -73,7 +73,6 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
     // Get all expenses with allocations
     // Only include expenses that have at least one allocation
     let expenses: any[] = [];
-    let expenseAllocations: any[] = [];
     let projectsMap: Map<string, { id: string; name: string }> = new Map();
     
     try {
@@ -289,7 +288,7 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
         return; // Skip expenses without allocations
       }
       
-      expense.allocations.forEach((allocation) => {
+      expense.allocations.forEach((allocation: any) => {
         if (!projectId || allocation.projectId === projectId) {
           const amount = allocation.allocatedAmount
             ? parseFloat(allocation.allocatedAmount.toString())
@@ -319,7 +318,7 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
         return; // Skip payments for expenses without allocations
       }
       
-      payment.expense.allocations.forEach((allocation) => {
+      payment.expense.allocations.forEach((allocation: any) => {
         if (!projectId || allocation.projectId === projectId) {
           // Calculate proportional payment amount based on allocation
           const expenseTotal = parseFloat(payment.expense.totalAmount.toString());

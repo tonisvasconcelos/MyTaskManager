@@ -153,6 +153,18 @@ export async function updateSale(
 }
 
 export async function deleteSale(tenantId: string, id: string): Promise<void> {
+  // Verify sale exists and belongs to tenant before deletion
+  // This is a safeguard - the controller should have already verified this,
+  // but we add it here as a final check
+  const sale = await prisma.sale.findFirst({
+    where: { id, tenantId },
+    select: { id: true },
+  });
+
+  if (!sale) {
+    throw new Error(`Sale with id ${id} not found for tenant ${tenantId}`);
+  }
+
   await prisma.sale.delete({
     where: { id, tenantId },
   });

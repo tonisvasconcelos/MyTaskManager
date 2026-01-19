@@ -515,18 +515,20 @@ export async function updatePayment(
 }
 
 export async function deletePayment(tenantId: string, id: string): Promise<void> {
-  // Get the expenseId before deleting
+  // Verify payment exists and belongs to tenant before deletion
   const payment = await prisma.payment.findFirst({
     where: { id, tenantId },
     select: { expenseId: true },
   });
+
+  if (!payment) {
+    throw new Error(`Payment with id ${id} not found for tenant ${tenantId}`);
+  }
 
   await prisma.payment.delete({
     where: { id, tenantId },
   });
 
   // Update expense status after deletion
-  if (payment) {
-    await updateExpenseStatus(payment.expenseId);
-  }
+  await updateExpenseStatus(payment.expenseId);
 }

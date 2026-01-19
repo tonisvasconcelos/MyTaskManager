@@ -82,6 +82,7 @@ const procurementSchema = z
     paymentMethod: z.enum(['CORPORATE_CREDIT_CARD', 'BANK_TRANSFER', 'PAYPAL', 'OTHER']),
     status: z.enum(['PENDING', 'PARTIALLY_PAID', 'PAID']),
     notes: z.string().optional(),
+    documentUrl: z.string().url('Invalid URL format').optional().nullable(),
     allocations: z.array(allocationSchema).min(1, 'At least one allocation is required'),
   })
   .refine(

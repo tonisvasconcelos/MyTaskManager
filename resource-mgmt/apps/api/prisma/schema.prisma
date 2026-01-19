@@ -156,6 +156,7 @@ model Task {
   status            TaskStatus   @default(Backlog)
   priority          TaskPriority @default(Medium)
   billable          TaskBillable @default(Billable)
+  labels            String[]     @default([]) // Tags to identify task area (e.g., #legal, #development)
   assigneeId        String?
   refTicket         String?      // Reference ticket from Jira/DevOps
   refLink           String?       // Link to ticket in external system

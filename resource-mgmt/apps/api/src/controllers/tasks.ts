@@ -73,7 +73,8 @@ export async function createTask(req: Request, res: Response, next: NextFunction
       description: data.description || null,
       status: data.status || 'Backlog',
       priority: data.priority || 'Medium',
-      billable: data.billable || 'Billable', // Add billable field
+      billable: data.billable || 'Billable',
+      labels: Array.isArray(data.labels) ? data.labels.filter((l: string) => l && l.trim()) : [], // Handle labels as array, filter empty
     };
     
     // Handle estimatedEffortHours - convert string to number if needed

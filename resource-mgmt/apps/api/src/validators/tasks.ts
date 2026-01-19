@@ -25,6 +25,12 @@ export const createTaskSchema = z.object({
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
     billable: z.nativeEnum(TaskBillable).optional(),
+    labels: z.union([
+      z.array(z.string()),
+      z.string().transform((val) => val ? val.split(',').map(l => l.trim()).filter(l => l) : []),
+      z.literal(''),
+      z.null()
+    ]).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
     refTicket: z.string().optional().or(z.null()).or(z.literal('')),
     refLink: z
@@ -64,6 +70,12 @@ export const updateTaskSchema = z.object({
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
     billable: z.nativeEnum(TaskBillable).optional(),
+    labels: z.union([
+      z.array(z.string()),
+      z.string().transform((val) => val ? val.split(',').map(l => l.trim()).filter(l => l) : []),
+      z.literal(''),
+      z.null()
+    ]).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
     refTicket: z.string().optional().or(z.null()).or(z.literal('')),
     refLink: z

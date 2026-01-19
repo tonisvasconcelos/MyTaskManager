@@ -112,6 +112,8 @@
     "status": "Status",
     "priority": "Priority",
     "billable": "Billable",
+    "labels": "Labels",
+    "labelsPlaceholder": "e.g., #legal, #development, #design (comma-separated)",
     "assignee": "Assignee",
     "unassigned": "Unassigned",
     "startDate": "Start Date",

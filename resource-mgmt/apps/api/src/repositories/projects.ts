@@ -105,6 +105,7 @@ export async function findProjectByIdForTenant(tenantId: string, id: string): Pr
         tasks: project.tasks.map((task: any) => ({
           ...task,
           billable: task.billable || 'Billable',
+          labels: task.labels || [],
         })),
       } as Project;
     }

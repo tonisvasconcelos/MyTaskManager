@@ -101,6 +101,11 @@ export function OngoingTasksPage() {
                     <Badge variant={task.billable === 'Billable' ? 'success' : 'default'}>
                       {t(`billable.${task.billable || 'Billable'}`)}
                     </Badge>
+                    {task.labels && task.labels.length > 0 && task.labels.map((label, idx) => (
+                      <Badge key={idx} variant="default">
+                        {label}
+                      </Badge>
+                    ))}
                     <Badge variant={task.status === 'Blocked' ? 'danger' : 'info'}>
                       {task.status === 'InProgress' ? t('projectDetail.inProgress') : task.status === 'Blocked' ? t('projectDetail.blocked') : task.status === 'Done' ? t('projectDetail.done') : t('projectDetail.backlog')}
                     </Badge>

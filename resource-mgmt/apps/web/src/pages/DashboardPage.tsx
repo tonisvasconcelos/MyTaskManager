@@ -104,6 +104,11 @@ export function DashboardPage() {
                     <Badge variant={task.billable === 'Billable' ? 'success' : 'default'}>
                       {t(`billable.${task.billable || 'Billable'}`)}
                     </Badge>
+                    {task.labels && task.labels.length > 0 && task.labels.map((label, idx) => (
+                      <Badge key={idx} variant="default">
+                        {label}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </Link>

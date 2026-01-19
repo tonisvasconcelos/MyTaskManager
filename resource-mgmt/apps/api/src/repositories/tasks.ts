@@ -60,10 +60,11 @@ export async function findTasks(
     prisma.task.count({ where }),
   ]);
 
-    // Add default billable field if missing (for backward compatibility)
+    // Add default billable and labels fields if missing (for backward compatibility)
     const dataWithDefaults = data.map((task: any) => ({
       ...task,
       billable: task.billable || 'Billable',
+      labels: task.labels || [],
     }));
 
     return { data: dataWithDefaults, total, page, pageSize };
@@ -132,10 +133,11 @@ export async function findOngoingTasks(
       prisma.task.count({ where }),
     ]);
 
-    // Add default billable field if missing (for backward compatibility)
+    // Add default billable and labels fields if missing (for backward compatibility)
     const dataWithDefaults = data.map((task: any) => ({
       ...task,
       billable: task.billable || 'Billable',
+      labels: task.labels || [],
     }));
 
     return { data: dataWithDefaults, total, page, pageSize };
@@ -207,6 +209,7 @@ export async function findTaskByIdForTenant(tenantId: string, id: string): Promi
       return {
         ...task,
         billable: (task as any).billable || 'Billable',
+        labels: (task as any).labels || [],
       } as Task;
     }
     return null;

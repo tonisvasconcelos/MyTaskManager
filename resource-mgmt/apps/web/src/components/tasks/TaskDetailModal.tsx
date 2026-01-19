@@ -22,6 +22,7 @@ const taskSchema = z.object({
   status: z.enum(['Backlog', 'InProgress', 'Blocked', 'Done']).optional(),
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
   billable: z.enum(['Billable', 'NonBillable']).optional(),
+  labels: z.string().optional(), // Comma-separated labels (e.g., "#legal, #development")
   assigneeId: z.string().uuid().optional().or(z.literal('')),
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
@@ -76,6 +77,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
       status: currentTask.status,
       priority: currentTask.priority,
       billable: currentTask.billable || 'Billable',
+      labels: (currentTask.labels && currentTask.labels.length > 0) ? currentTask.labels.join(', ') : '',
       assigneeId: currentTask.assigneeId || '',
       startDate: currentTask.startDate ? new Date(currentTask.startDate).toISOString().split('T')[0] : '',
       estimatedEndDate: currentTask.estimatedEndDate
@@ -94,6 +96,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
       const updated = await updateMutation.mutateAsync({
         id: currentTask.id,
         ...data,
+        labels: data.labels ? data.labels.split(',').map(l => l.trim()).filter(l => l) : [],
         assigneeId: data.assigneeId || null,
         startDate: data.startDate || null,
         estimatedEndDate: data.estimatedEndDate || null,
@@ -243,6 +246,12 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               error={errors.refLink?.message}
             />
           </div>
+          <Input
+            label={t('tasks.labels')}
+            placeholder={t('tasks.labelsPlaceholder')}
+            {...register('labels')}
+            error={errors.labels?.message}
+          />
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button type="submit" disabled={updateMutation.isPending} className="flex-1 sm:flex-initial">
               {t('common.save')}
@@ -276,6 +285,11 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                   <Badge variant={currentTask.billable === 'Billable' ? 'success' : 'default'}>
                     {t(`billable.${currentTask.billable}`)}
                   </Badge>
+                  {currentTask.labels && currentTask.labels.length > 0 && currentTask.labels.map((label, idx) => (
+                    <Badge key={idx} variant="default">
+                      {label}
+                    </Badge>
+                  ))}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">

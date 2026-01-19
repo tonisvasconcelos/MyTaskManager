@@ -83,8 +83,9 @@ export async function findTimeEntries(
       ...entry,
       task: entry.task ? {
         ...entry.task,
-        billable: entry.task.billable || 'Billable',
-      } : entry.task,
+          billable: entry.task.billable || 'Billable',
+          labels: entry.task.labels || [],
+        } : entry.task,
     }));
   } catch (err: any) {
     // Handle case where billable field doesn't exist (migration not run)
@@ -172,6 +173,7 @@ export async function findTimeEntryById(id: string): Promise<TimeEntryWithRelati
         task: {
           ...entry.task,
           billable: (entry.task as any).billable || 'Billable',
+          labels: (entry.task as any).labels || [],
         },
       } as TimeEntryWithRelations;
     }
@@ -225,6 +227,7 @@ export async function findTimeEntryByIdForTenant(
         task: {
           ...entry.task,
           billable: (entry.task as any).billable || 'Billable',
+          labels: (entry.task as any).labels || [],
         },
       } as TimeEntryWithRelations;
     }
@@ -281,6 +284,7 @@ export async function createTimeEntry(
         task: {
           ...entry.task,
           billable: (entry.task as any).billable || 'Billable',
+          labels: (entry.task as any).labels || [],
         },
       } as TimeEntryWithRelations;
     }
@@ -335,6 +339,7 @@ export async function updateTimeEntry(
         task: {
           ...entry.task,
           billable: (entry.task as any).billable || 'Billable',
+          labels: (entry.task as any).labels || [],
         },
       } as TimeEntryWithRelations;
     }

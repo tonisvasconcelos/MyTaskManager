@@ -112,6 +112,8 @@
     "status": "Status",
     "priority": "Prioridade",
     "billable": "Faturável",
+    "labels": "Etiquetas",
+    "labelsPlaceholder": "ex: #legal, #desenvolvimento, #design (separado por vírgula)",
     "assignee": "Responsável",
     "unassigned": "Não atribuído",
     "startDate": "Data de Início",

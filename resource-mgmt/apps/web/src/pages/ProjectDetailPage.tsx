@@ -24,6 +24,7 @@ const taskSchema = z.object({
   status: z.enum(['Backlog', 'InProgress', 'Blocked', 'Done']).optional(),
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
   billable: z.enum(['Billable', 'NonBillable']).optional(),
+  labels: z.string().optional(), // Comma-separated labels (e.g., "#legal, #development")
   assigneeId: z.string().uuid().optional().or(z.literal('')),
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
@@ -104,6 +105,7 @@ export function ProjectDetailPage() {
       await createMutation.mutateAsync({
         projectId: id,
         ...data,
+        labels: data.labels ? data.labels.split(',').map(l => l.trim()).filter(l => l) : [],
         assigneeId: data.assigneeId || null,
         startDate: data.startDate || null,
         estimatedEndDate: data.estimatedEndDate || null,
@@ -234,6 +236,11 @@ export function ProjectDetailPage() {
                             <Badge variant={task.billable === 'Billable' ? 'success' : 'default'} className="text-xs">
                               {t(`billable.${task.billable || 'Billable'}`)}
                             </Badge>
+                            {task.labels && task.labels.length > 0 && task.labels.map((label, idx) => (
+                              <Badge key={idx} variant="default" className="text-xs">
+                                {label}
+                              </Badge>
+                            ))}
                             {task.estimatedEndDate && (
                               <span className="text-xs text-text-secondary">
                                 📅 {new Date(task.estimatedEndDate).toLocaleDateString()}
@@ -353,6 +360,12 @@ export function ProjectDetailPage() {
             min="0"
             {...register('estimatedEffortHours', { valueAsNumber: true })}
             error={errors.estimatedEffortHours?.message}
+          />
+          <Input
+            label={t('tasks.labels')}
+            placeholder={t('tasks.labelsPlaceholder')}
+            {...register('labels')}
+            error={errors.labels?.message}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input

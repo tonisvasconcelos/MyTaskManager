@@ -37,6 +37,9 @@ export function errorHandler(
   // Prisma errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     console.error('Prisma error:', err);
+    console.error('Error code:', err.code);
+    console.error('Error message:', err.message);
+    console.error('Error meta:', err.meta);
     
     // Handle specific Prisma error codes
     if (err.code === 'P2002') {
@@ -60,12 +63,31 @@ export function errorHandler(
     }
 
     // Database schema mismatch (e.g., missing column)
-    if (err.code === 'P2001' || err.message?.includes('Unknown column') || err.message?.includes('column') && err.message?.includes('does not exist')) {
+    // Check for various indicators of missing columns
+    const errorMessage = err.message || '';
+    const errorCode = err.code || '';
+    const hasColumnError = errorMessage.includes('Unknown column') || 
+                          errorMessage.includes('column') && errorMessage.includes('does not exist') ||
+                          errorMessage.includes('billable') ||
+                          errorMessage.includes('language') ||
+                          errorCode === 'P2001' ||
+                          errorCode === 'P2010' ||
+                          errorCode === 'P2011';
+
+    if (hasColumnError) {
+      console.error('DATABASE_SCHEMA_MISMATCH detected. Missing columns detected.');
       return res.status(500).json({
         error: {
           code: 'DATABASE_SCHEMA_ERROR',
-          message: 'Database schema mismatch. Please ensure all migrations have been applied.',
-          details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+          message: 'Database schema mismatch. The database is missing required columns (billable, language). Please run: npx prisma migrate deploy',
+          details: {
+            hint: 'Run this command on your production server: cd resource-mgmt/apps/api && npx prisma migrate deploy',
+            errorCode: err.code,
+            ...(process.env.NODE_ENV === 'development' ? { 
+              message: err.message,
+              meta: err.meta 
+            } : {}),
+          },
         },
       });
     }
@@ -91,18 +113,26 @@ export function errorHandler(
     });
   }
 
-  // Check for database schema errors in generic errors
+  // Check for database schema errors in generic errors (including our custom DATABASE_SCHEMA_MISMATCH errors)
   if (err instanceof Error) {
     const errorMessage = err.message || '';
     if (errorMessage.includes('billable') || errorMessage.includes('language') || 
-        errorMessage.includes('Unknown column') || errorMessage.includes('column') && errorMessage.includes('does not exist') ||
+        errorMessage.includes('Unknown column') || 
+        (errorMessage.includes('column') && errorMessage.includes('does not exist')) ||
         errorMessage.includes('DATABASE_SCHEMA_MISMATCH')) {
-      console.error('Database schema mismatch detected:', err);
+      console.error('Database schema mismatch detected in generic error:', err);
+      console.error('Error stack:', err.stack);
       return res.status(500).json({
         error: {
           code: 'DATABASE_SCHEMA_ERROR',
-          message: 'Database schema mismatch. Please ensure all migrations have been applied. The database is missing required fields (billable, language).',
-          details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+          message: 'Database schema mismatch. The database is missing required columns (billable, language). Please run: npx prisma migrate deploy',
+          details: {
+            hint: 'Run this command on your production server: cd resource-mgmt/apps/api && npx prisma migrate deploy',
+            ...(process.env.NODE_ENV === 'development' ? { 
+              message: err.message,
+              stack: err.stack 
+            } : {}),
+          },
         },
       });
     }

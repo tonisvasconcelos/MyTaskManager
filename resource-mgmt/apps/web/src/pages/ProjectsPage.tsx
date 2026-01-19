@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../shared/api/projects'
 import { useCompanies } from '../shared/api/companies'
 import { useDebounce } from '../shared/hooks/useDebounce'
@@ -36,6 +37,7 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'danger' 
 }
 
 export function ProjectsPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [companyFilter, setCompanyFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -104,12 +106,12 @@ export function ProjectsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this project?')) {
+    if (confirm(t('projects.deleteConfirm'))) {
       try {
         await deleteMutation.mutateAsync(id)
       } catch (error) {
         console.error('Error deleting project:', error)
-        alert('Cannot delete project with associated tasks')
+        alert(t('projects.deleteError'))
       }
     }
   }
@@ -117,13 +119,13 @@ export function ProjectsPage() {
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
-        <h1 className="text-3xl font-bold text-text-primary">Projects</h1>
-        <Button onClick={openCreateModal}>Create Project</Button>
+        <h1 className="text-3xl font-bold text-text-primary">{t('projects.title')}</h1>
+        <Button onClick={openCreateModal}>{t('projects.createProject')}</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Input
-          placeholder="Search projects..."
+          placeholder={t('projects.searchPlaceholder')}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value)
@@ -137,7 +139,7 @@ export function ProjectsPage() {
             setPage(1)
           }}
           options={[
-            { value: '', label: 'All Companies' },
+            { value: '', label: t('projects.allCompanies') },
             ...(companies?.data.map((c) => ({ value: c.id, label: c.name })) || []),
           ]}
         />
@@ -148,12 +150,12 @@ export function ProjectsPage() {
             setPage(1)
           }}
           options={[
-            { value: '', label: 'All Statuses' },
-            { value: 'Planned', label: 'Planned' },
-            { value: 'Active', label: 'Active' },
-            { value: 'OnHold', label: 'On Hold' },
-            { value: 'Completed', label: 'Completed' },
-            { value: 'Cancelled', label: 'Cancelled' },
+            { value: '', label: t('projects.allStatuses') },
+            { value: 'Planned', label: t('status.Planned') },
+            { value: 'Active', label: t('status.Active') },
+            { value: 'OnHold', label: t('status.OnHold') },
+            { value: 'Completed', label: t('status.Completed') },
+            { value: 'Cancelled', label: t('status.Cancelled') },
           ]}
         />
       </div>
@@ -191,14 +193,14 @@ export function ProjectsPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                     <Badge variant={statusColors[project.status] || 'default'} className="self-start">
-                      {project.status}
+                      {t(`status.${project.status}`)}
                     </Badge>
                     <div className="flex gap-2">
                       <Button variant="secondary" size="sm" onClick={() => openEditModal(project)}>
-                        Edit
+                        {t('common.edit')}
                       </Button>
                       <Button variant="danger" size="sm" onClick={() => handleDelete(project.id)}>
-                        Delete
+                        {t('common.delete')}
                       </Button>
                     </div>
                   </div>
@@ -216,57 +218,57 @@ export function ProjectsPage() {
         </>
       ) : (
         <Card>
-          <p className="text-text-secondary text-center py-8">No projects found</p>
+          <p className="text-text-secondary text-center py-8">{t('common.noData')}</p>
         </Card>
       )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingProject ? 'Edit Project' : 'Create Project'}
+        title={editingProject ? t('projects.editProject') : t('projects.createProject')}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Select
-            label="Company *"
+            label={`${t('projects.company')} *`}
             {...register('companyId')}
             error={errors.companyId?.message}
             options={[
-              { value: '', label: 'Select a company' },
+              { value: '', label: t('projects.allCompanies') },
               ...(companies?.data.map((c) => ({ value: c.id, label: c.name })) || []),
             ]}
           />
           <Input
-            label="Name *"
+            label={`${t('projects.name')} *`}
             {...register('name')}
             error={errors.name?.message}
           />
           <Input
-            label="Description"
+            label={t('projects.description')}
             {...register('description')}
             error={errors.description?.message}
           />
           <Select
-            label="Status"
+            label={t('projects.status')}
             {...register('status')}
             error={errors.status?.message}
             options={[
-              { value: 'Planned', label: 'Planned' },
-              { value: 'Active', label: 'Active' },
-              { value: 'OnHold', label: 'On Hold' },
-              { value: 'Completed', label: 'Completed' },
-              { value: 'Cancelled', label: 'Cancelled' },
+              { value: 'Planned', label: t('status.Planned') },
+              { value: 'Active', label: t('status.Active') },
+              { value: 'OnHold', label: t('status.OnHold') },
+              { value: 'Completed', label: t('status.Completed') },
+              { value: 'Cancelled', label: t('status.Cancelled') },
             ]}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Start Date"
+              label={t('projects.startDate')}
               type="date"
               {...register('startDate')}
               error={errors.startDate?.message}
             />
             <Input
-              label="Target End Date"
+              label={t('projects.targetEndDate')}
               type="date"
               {...register('targetEndDate')}
               error={errors.targetEndDate?.message}
@@ -274,10 +276,10 @@ export function ProjectsPage() {
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-              {editingProject ? 'Update' : 'Create'}
+              {editingProject ? t('common.update') : t('common.create')}
             </Button>
             <Button variant="secondary" type="button" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

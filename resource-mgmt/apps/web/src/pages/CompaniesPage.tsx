@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useCompanies,
   useCreateCompany,
@@ -138,12 +139,12 @@ export function CompaniesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this company?')) {
+    if (confirm(t('companies.deleteConfirm'))) {
       try {
         await deleteMutation.mutateAsync(id)
       } catch (error) {
         console.error('Error deleting company:', error)
-        alert('Cannot delete company with associated projects')
+        alert(t('companies.deleteError'))
       }
     }
   }
@@ -242,10 +243,10 @@ export function CompaniesPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button variant="secondary" size="sm" onClick={() => openEditModal(company)}>
-                      Edit
+                      {t('common.edit')}
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => handleDelete(company.id)}>
-                      Delete
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </div>
@@ -262,39 +263,39 @@ export function CompaniesPage() {
         </>
       ) : (
         <Card>
-          <p className="text-text-secondary text-center py-8">No companies found</p>
+          <p className="text-text-secondary text-center py-8">{t('common.noData')}</p>
         </Card>
       )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCompany ? 'Edit Company' : 'Create Company'}
+        title={editingCompany ? t('companies.editCompany') : t('companies.createCompany')}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input
-            label="Name *"
+            label={`${t('companies.name')} *`}
             {...register('name')}
             error={errors.name?.message}
           />
           <Input
-            label="Email"
+            label={t('companies.email')}
             type="email"
             {...register('email')}
             error={errors.email?.message}
           />
           <Input
-            label="Phone"
+            label={t('companies.phone')}
             {...register('phone')}
             error={errors.phone?.message}
           />
           <Input
-            label="Website"
+            label={t('companies.website')}
             {...register('website')}
             error={errors.website?.message}
           />
           <Input
-            label="Address"
+            label={t('companies.address')}
             {...register('address')}
             error={errors.address?.message}
           />
@@ -328,7 +329,7 @@ export function CompaniesPage() {
             </div>
 
             <Input
-              label="Tax Registration No"
+              label={t('companies.taxRegistrationNo')}
               placeholder="VAT / CNPJ"
               {...register('taxRegistrationNo')}
               error={errors.taxRegistrationNo?.message}
@@ -336,7 +337,7 @@ export function CompaniesPage() {
 
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                Billing Unit
+                {t('companies.billingUnit')}
               </label>
               <select className="input w-full" {...register('billingUnit')} defaultValue="">
                 <option value="">(not set)</option>
@@ -349,7 +350,7 @@ export function CompaniesPage() {
             </div>
 
             <Input
-              label="Unit Price"
+              label={t('companies.unitPrice')}
               type="number"
               step="0.01"
               min="0"
@@ -360,7 +361,7 @@ export function CompaniesPage() {
 
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                General Notes
+                {t('companies.generalNotes')}
               </label>
               <textarea
                 className="input w-full min-h-[96px]"
@@ -370,7 +371,7 @@ export function CompaniesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Logo</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">{t('companies.logo')}</label>
               <input
                 type="file"
                 accept="image/*"
@@ -385,10 +386,10 @@ export function CompaniesPage() {
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-              {editingCompany ? 'Update' : 'Create'}
+              {editingCompany ? t('common.update') : t('common.create')}
             </Button>
             <Button variant="secondary" type="button" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

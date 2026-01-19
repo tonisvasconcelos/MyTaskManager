@@ -176,6 +176,8 @@ export async function createTenantUser(req: Request, res: Response, next: NextFu
     const existing = await prisma.user.findFirst({ where: { tenantId, email } });
     if (existing) throw new ConflictError('User already exists for tenant');
 
+    const language = (body.language || 'EN') as any;
+
     const user = await prisma.user.create({
       data: {
         tenantId,
@@ -183,8 +185,9 @@ export async function createTenantUser(req: Request, res: Response, next: NextFu
         email,
         passwordHash,
         role,
+        language,
       },
-      select: { id: true, fullName: true, email: true, role: true, createdAt: true, updatedAt: true },
+      select: { id: true, fullName: true, email: true, role: true, language: true, createdAt: true, updatedAt: true },
     });
 
     res.status(201).json(user);
@@ -204,12 +207,13 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
     const data: any = {};
     if (body.fullName) data.fullName = body.fullName;
     if (body.role) data.role = body.role;
+    if (body.language) data.language = body.language;
     if (body.password) data.passwordHash = await bcrypt.hash(body.password, 10);
 
     const updated = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, fullName: true, email: true, role: true, createdAt: true, updatedAt: true },
+      select: { id: true, fullName: true, email: true, role: true, language: true, createdAt: true, updatedAt: true },
     });
 
     res.json(updated);

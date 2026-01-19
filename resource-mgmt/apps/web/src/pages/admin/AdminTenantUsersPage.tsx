@@ -3,6 +3,7 @@ import { useParams, Navigate, Link } from 'react-router-dom'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import { apiClient, isAdminLoggedIn } from '../../shared/api/client'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -16,6 +17,7 @@ type User = {
   fullName: string
   email: string
   role: 'Admin' | 'Manager' | 'Contributor'
+  language?: 'EN' | 'PT_BR' | null
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +27,7 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(['Admin', 'Manager', 'Contributor']).optional(),
+  language: z.enum(['EN', 'PT_BR']).optional(),
 })
 
 type CreateUserForm = z.infer<typeof createUserSchema>
@@ -33,11 +36,13 @@ const updateUserSchema = z.object({
   fullName: z.string().min(1).optional(),
   role: z.enum(['Admin', 'Manager', 'Contributor']).optional(),
   password: z.string().min(8).optional(),
+  language: z.enum(['EN', 'PT_BR']).optional(),
 })
 
 type UpdateUserForm = z.infer<typeof updateUserSchema>
 
 export function AdminTenantUsersPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +74,7 @@ export function AdminTenantUsersPage() {
 
   const createForm = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { role: 'Contributor' },
+    defaultValues: { role: 'Contributor', language: 'EN' },
   })
 
   const updateForm = useForm<UpdateUserForm>({
@@ -90,7 +95,7 @@ export function AdminTenantUsersPage() {
 
   const openEdit = (u: User) => {
     setEditingUser(u)
-    updateForm.reset({ fullName: u.fullName, role: u.role })
+    updateForm.reset({ fullName: u.fullName, role: u.role, language: u.language || 'EN' })
   }
 
   const onUpdate = async (data: UpdateUserForm) => {
@@ -110,14 +115,14 @@ export function AdminTenantUsersPage() {
       <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Admin · Tenant Users</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">{t('admin.users.title')}</h1>
             <p className="text-text-secondary mt-1 break-all">Tenant id: {id}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Link to="/admin" className="btn-secondary text-center">
-              ← Back to tenants
+              ← {t('admin.tenants.backToApp')}
             </Link>
-            <Button onClick={() => setIsCreateOpen(true)}>Create user</Button>
+            <Button onClick={() => setIsCreateOpen(true)}>{t('admin.users.createUser')}</Button>
           </div>
         </div>
 
@@ -146,47 +151,63 @@ export function AdminTenantUsersPage() {
           </div>
         ) : (
           <Card>
-            <p className="text-text-secondary text-center py-8">No users yet</p>
+            <p className="text-text-secondary text-center py-8">{t('admin.users.noUsers')}</p>
           </Card>
         )}
 
-        <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Create user" size="lg">
+        <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title={t('admin.users.createUser')} size="lg">
           <form onSubmit={createForm.handleSubmit(onCreate)} className="space-y-4">
-            <Input label="Full name" {...createForm.register('fullName')} error={createForm.formState.errors.fullName?.message} />
-            <Input label="Email" type="email" {...createForm.register('email')} error={createForm.formState.errors.email?.message} />
-            <Input label="Password" type="password" {...createForm.register('password')} error={createForm.formState.errors.password?.message} />
+            <Input label={t('admin.users.fullName')} {...createForm.register('fullName')} error={createForm.formState.errors.fullName?.message} />
+            <Input label={t('admin.users.email')} type="email" {...createForm.register('email')} error={createForm.formState.errors.email?.message} />
+            <Input label={t('admin.users.password')} type="password" {...createForm.register('password')} error={createForm.formState.errors.password?.message} />
             <Select
-              label="Role"
+              label={t('admin.users.role')}
               {...createForm.register('role')}
               options={[
-                { value: 'Contributor', label: 'Contributor' },
-                { value: 'Manager', label: 'Manager' },
-                { value: 'Admin', label: 'Admin' },
+                { value: 'Contributor', label: t('role.contributor') },
+                { value: 'Manager', label: t('role.manager') },
+                { value: 'Admin', label: t('role.admin') },
+              ]}
+            />
+            <Select
+              label={t('admin.users.language')}
+              {...createForm.register('language')}
+              options={[
+                { value: 'EN', label: t('common.english') },
+                { value: 'PT_BR', label: t('common.portuguese') },
               ]}
             />
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={createForm.formState.isSubmitting}>Create</Button>
-              <Button variant="secondary" type="button" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createForm.formState.isSubmitting}>{t('common.create')}</Button>
+              <Button variant="secondary" type="button" onClick={() => setIsCreateOpen(false)}>{t('common.cancel')}</Button>
             </div>
           </form>
         </Modal>
 
-        <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="Edit user" size="lg">
+        <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title={t('admin.users.editUser')} size="lg">
           <form onSubmit={updateForm.handleSubmit(onUpdate)} className="space-y-4">
-            <Input label="Full name" {...updateForm.register('fullName')} error={updateForm.formState.errors.fullName?.message} />
+            <Input label={t('admin.users.fullName')} {...updateForm.register('fullName')} error={updateForm.formState.errors.fullName?.message} />
             <Select
-              label="Role"
+              label={t('admin.users.role')}
               {...updateForm.register('role')}
               options={[
-                { value: 'Contributor', label: 'Contributor' },
-                { value: 'Manager', label: 'Manager' },
-                { value: 'Admin', label: 'Admin' },
+                { value: 'Contributor', label: t('role.contributor') },
+                { value: 'Manager', label: t('role.manager') },
+                { value: 'Admin', label: t('role.admin') },
               ]}
             />
-            <Input label="Reset password (optional)" type="password" {...updateForm.register('password')} error={updateForm.formState.errors.password?.message} />
+            <Select
+              label={t('admin.users.language')}
+              {...updateForm.register('language')}
+              options={[
+                { value: 'EN', label: t('common.english') },
+                { value: 'PT_BR', label: t('common.portuguese') },
+              ]}
+            />
+            <Input label={t('admin.users.resetPassword')} type="password" {...updateForm.register('password')} error={updateForm.formState.errors.password?.message} />
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={updateForm.formState.isSubmitting}>Save</Button>
-              <Button variant="secondary" type="button" onClick={() => setEditingUser(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateForm.formState.isSubmitting}>{t('common.save')}</Button>
+              <Button variant="secondary" type="button" onClick={() => setEditingUser(null)}>{t('common.cancel')}</Button>
             </div>
           </form>
         </Modal>

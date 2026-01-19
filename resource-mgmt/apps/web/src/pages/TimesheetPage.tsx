@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTimesheet, useCreateTimeEntry, useUpdateTimeEntry, useDeleteTimeEntry } from '../shared/api/timesheet'
 import { useUsers } from '../shared/api/users'
 import { useTasks } from '../shared/api/tasks'
@@ -42,6 +43,7 @@ function getWeekRange(date: Date = new Date()) {
 }
 
 export function TimesheetPage() {
+  const { t } = useTranslation()
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [userFilter, setUserFilter] = useState<string>('')
   const [projectFilter, setProjectFilter] = useState<string>('')
@@ -117,7 +119,7 @@ export function TimesheetPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this time entry?')) {
+    if (confirm(t('timesheet.deleteConfirm'))) {
       try {
         await deleteMutation.mutateAsync(id)
       } catch (error) {
@@ -144,8 +146,8 @@ export function TimesheetPage() {
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
-        <h1 className="text-3xl font-bold text-text-primary">Timesheet</h1>
-        <Button onClick={openCreateModal}>Add Time Entry</Button>
+        <h1 className="text-3xl font-bold text-text-primary">{t('timesheet.title')}</h1>
+        <Button onClick={openCreateModal}>{t('timesheet.addTimeEntry')}</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -153,7 +155,7 @@ export function TimesheetPage() {
           value={userFilter}
           onChange={(e) => setUserFilter(e.target.value)}
           options={[
-            { value: '', label: 'All Users' },
+            { value: '', label: t('timesheet.allUsers') },
             ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
           ]}
         />
@@ -164,7 +166,7 @@ export function TimesheetPage() {
             setTaskFilter('')
           }}
           options={[
-            { value: '', label: 'All Projects' },
+            { value: '', label: t('timesheet.allProjects') },
             ...(projects?.data.map((p) => ({ value: p.id, label: p.name })) || []),
           ]}
         />
@@ -172,7 +174,7 @@ export function TimesheetPage() {
           value={taskFilter}
           onChange={(e) => setTaskFilter(e.target.value)}
           options={[
-            { value: '', label: 'All Tasks' },
+            { value: '', label: t('timesheet.allTasks') },
             ...(tasks?.data.map((t) => ({ value: t.id, label: t.title })) || []),
           ]}
         />
@@ -182,17 +184,17 @@ export function TimesheetPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <Button variant="secondary" size="sm" onClick={() => navigateWeek('prev')}>
-              ← Previous
+              ← {t('common.previous')}
             </Button>
             <h2 className="text-base sm:text-lg font-semibold text-text-primary text-center sm:text-left">
               {weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}
             </h2>
             <Button variant="secondary" size="sm" onClick={() => navigateWeek('next')}>
-              Next →
+              {t('common.next')} →
             </Button>
           </div>
           {hasWarning && (
-            <Badge variant="warning" className="self-center sm:self-auto">⚠️ Some days exceed 12 hours</Badge>
+            <Badge variant="warning" className="self-center sm:self-auto">⚠️ {t('timesheet.warning')}</Badge>
           )}
         </div>
 
@@ -205,12 +207,12 @@ export function TimesheetPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-2 text-text-secondary font-medium">Date</th>
-                    <th className="text-left py-2 text-text-secondary font-medium">Task</th>
-                    <th className="text-left py-2 text-text-secondary font-medium">User</th>
-                    <th className="text-right py-2 text-text-secondary font-medium">Hours</th>
-                    <th className="text-left py-2 text-text-secondary font-medium">Notes</th>
-                    <th className="text-right py-2 text-text-secondary font-medium">Actions</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.date')}</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.task')}</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.user')}</th>
+                    <th className="text-right py-2 text-text-secondary font-medium">{t('timesheet.hours')}</th>
+                    <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.notes')}</th>
+                    <th className="text-right py-2 text-text-secondary font-medium">{t('timesheet.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -233,10 +235,10 @@ export function TimesheetPage() {
                             )}
                           </td>
                           <td className="py-2 text-text-primary">
-                            {entry.task?.title || 'Unknown Task'}
+                            {entry.task?.title || t('timesheet.task')}
                           </td>
                           <td className="py-2 text-text-primary">
-                            {entry.user?.fullName || 'Unknown User'}
+                            {entry.user?.fullName || t('timesheet.user')}
                           </td>
                           <td className="py-2 text-right text-text-primary">{entry.hours}</td>
                           <td className="py-2 text-text-secondary text-sm max-w-xs truncate">
@@ -249,14 +251,14 @@ export function TimesheetPage() {
                                 size="sm"
                                 onClick={() => openEditModal(entry)}
                               >
-                                Edit
+                                {t('common.edit')}
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
                                 onClick={() => handleDelete(entry.id)}
                               >
-                                Delete
+                                {t('common.delete')}
                               </Button>
                             </div>
                           </td>
@@ -266,7 +268,7 @@ export function TimesheetPage() {
                 </tbody>
               </table>
               {timesheet.entries.length === 0 && (
-                <p className="text-text-secondary text-center py-8">No time entries for this week</p>
+                <p className="text-text-secondary text-center py-8">{t('timesheet.noEntries')}</p>
               )}
             </div>
 
@@ -295,10 +297,10 @@ export function TimesheetPage() {
                             )}
                           </div>
                           <p className="text-text-primary font-semibold">
-                            {entry.task?.title || 'Unknown Task'}
+                            {entry.task?.title || t('timesheet.task')}
                           </p>
                           <p className="text-text-secondary text-sm">
-                            {entry.user?.fullName || 'Unknown User'}
+                            {entry.user?.fullName || t('timesheet.user')}
                           </p>
                         </div>
                         <div className="text-right">
@@ -315,7 +317,7 @@ export function TimesheetPage() {
                           onClick={() => openEditModal(entry)}
                           className="flex-1"
                         >
-                          Edit
+                          {t('common.edit')}
                         </Button>
                         <Button
                           variant="danger"
@@ -323,32 +325,32 @@ export function TimesheetPage() {
                           onClick={() => handleDelete(entry.id)}
                           className="flex-1"
                         >
-                          Delete
+                          {t('common.delete')}
                         </Button>
                       </div>
                     </div>
                   )
                 })}
               {timesheet.entries.length === 0 && (
-                <p className="text-text-secondary text-center py-8">No time entries for this week</p>
+                <p className="text-text-secondary text-center py-8">{t('timesheet.noEntries')}</p>
               )}
             </div>
           </>
         ) : (
-          <p className="text-text-secondary text-center py-8">Loading...</p>
+          <p className="text-text-secondary text-center py-8">{t('common.loading')}</p>
         )}
       </Card>
 
       {timesheet && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
-            <h3 className="text-sm text-text-secondary mb-2">Total Hours (Week)</h3>
+            <h3 className="text-sm text-text-secondary mb-2">{t('timesheet.totalHours')}</h3>
             <p className="text-2xl font-bold text-text-primary">
               {Object.values(timesheet.totalsPerDay).reduce((sum, hours) => sum + hours, 0).toFixed(1)}
             </p>
           </Card>
           <Card>
-            <h3 className="text-sm text-text-secondary mb-2">Projects</h3>
+            <h3 className="text-sm text-text-secondary mb-2">{t('timesheet.projects')}</h3>
             <div className="space-y-1">
               {Object.entries(timesheet.totalsPerProject).slice(0, 5).map(([projectId, hours]) => {
                 const project = projects?.data.find((p) => p.id === projectId)
@@ -362,7 +364,7 @@ export function TimesheetPage() {
             </div>
           </Card>
           <Card>
-            <h3 className="text-sm text-text-secondary mb-2">Tasks</h3>
+            <h3 className="text-sm text-text-secondary mb-2">{t('timesheet.tasks')}</h3>
             <div className="space-y-1">
               {Object.entries(timesheet.totalsPerTask).slice(0, 5).map(([taskId, hours]) => {
                 const task = tasks?.data.find((t) => t.id === taskId)
@@ -381,37 +383,37 @@ export function TimesheetPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingEntry ? 'Edit Time Entry' : 'Add Time Entry'}
+        title={editingEntry ? t('timesheet.editTimeEntry') : t('timesheet.addTimeEntry')}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Select
-            label="User *"
+            label={`${t('timesheet.user')} *`}
             {...register('userId')}
             error={errors.userId?.message}
             options={[
-              { value: '', label: 'Select a user' },
+              { value: '', label: t('timesheet.allUsers') },
               ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
             ]}
           />
           <Select
-            label="Project"
+            label={t('timesheet.projects')}
             value={selectedProjectId || ''}
             onChange={(e) => {
               setProjectFilter(e.target.value)
               setTaskFilter('')
             }}
             options={[
-              { value: '', label: 'All Projects' },
+              { value: '', label: t('timesheet.allProjects') },
               ...(projects?.data.map((p) => ({ value: p.id, label: p.name })) || []),
             ]}
           />
           <Select
-            label="Task *"
+            label={`${t('timesheet.task')} *`}
             {...register('taskId')}
             error={errors.taskId?.message}
             options={[
-              { value: '', label: 'Select a task' },
+              { value: '', label: t('timesheet.allTasks') },
               ...(tasks?.data
                 .filter((t) => !projectFilter || t.projectId === projectFilter)
                 .map((t) => ({ value: t.id, label: t.title })) || []),
@@ -419,13 +421,13 @@ export function TimesheetPage() {
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Date *"
+              label={`${t('timesheet.date')} *`}
               type="date"
               {...register('entryDate')}
               error={errors.entryDate?.message}
             />
             <Input
-              label="Hours *"
+              label={`${t('timesheet.hours')} *`}
               type="number"
               step="0.25"
               min="0.25"
@@ -435,16 +437,16 @@ export function TimesheetPage() {
             />
           </div>
           <Textarea
-            label="Notes"
+            label={t('timesheet.notes')}
             {...register('notes')}
             error={errors.notes?.message}
           />
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-              {editingEntry ? 'Update' : 'Create'}
+              {editingEntry ? t('common.update') : t('common.create')}
             </Button>
             <Button variant="secondary" type="button" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

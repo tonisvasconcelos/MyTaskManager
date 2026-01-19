@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import { apiClient, clearAdminToken, isAdminLoggedIn } from '../../shared/api/client'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -147,12 +148,12 @@ export function AdminTenantsPage() {
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Admin · Tenants</h1>
-            <p className="text-text-secondary mt-1">Provision tenants, users, and licenses</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">{t('admin.tenants.title')}</h1>
+            <p className="text-text-secondary mt-1">{t('admin.tenants.subtitle')}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="secondary" onClick={() => navigate('/')}>
-              Back to app
+              {t('admin.tenants.backToApp')}
             </Button>
             <Button
               variant="secondary"
@@ -161,15 +162,15 @@ export function AdminTenantsPage() {
                 window.location.href = '#/admin/login'
               }}
             >
-              Sign out (Admin)
+              {t('admin.tenants.signOut')}
             </Button>
-            <Button onClick={openCreate}>Create tenant</Button>
+            <Button onClick={openCreate}>{t('admin.tenants.createTenant')}</Button>
           </div>
         </div>
 
         <div className="mb-6 flex flex-col sm:flex-row gap-3">
           <Input
-            placeholder="Search tenants..."
+            placeholder={t('admin.tenants.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1"
@@ -181,7 +182,7 @@ export function AdminTenantsPage() {
               load()
             }}
           >
-            Search
+            {t('admin.tenants.search')}
           </Button>
         </div>
 
@@ -202,24 +203,24 @@ export function AdminTenantsPage() {
                       <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         <h3 className="text-lg font-semibold text-text-primary break-words">{t.slug}</h3>
                         <Badge variant={t.isActive ? 'success' : 'danger'}>
-                          {t.isActive ? 'Active' : 'Inactive'}
+                          {t.isActive ? t('admin.tenants.active') : t('common.noData')}
                         </Badge>
                         {t.activeUntil && (
                           <Badge variant="warning">
-                            Expires {new Date(t.activeUntil).toLocaleDateString()}
+                            {t('admin.tenants.activeUntil')} {new Date(t.activeUntil).toLocaleDateString()}
                           </Badge>
                         )}
                       </div>
                       <p className="text-sm text-text-secondary mt-1 break-words">
-                        {t.name || '—'} · {t.planName} · Seats {t.maxUsers}
+                        {t.name || '—'} · {t.planName} · {t('admin.tenants.maxUsers')} {t.maxUsers}
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Link to={`/admin/tenants/${t.id}`} className="btn-secondary text-center">
-                        Manage users
+                        {t('admin.tenants.manageUsers')}
                       </Link>
                       <Button variant="secondary" size="sm" onClick={() => openEdit(t)}>
-                        Edit license
+                        {t('admin.tenants.editLicense')}
                       </Button>
                     </div>
                   </div>
@@ -237,41 +238,41 @@ export function AdminTenantsPage() {
           </>
         ) : (
           <Card>
-            <p className="text-text-secondary text-center py-8">No tenants found</p>
+            <p className="text-text-secondary text-center py-8">{t('admin.tenants.noTenants')}</p>
           </Card>
         )}
 
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          title={editing ? 'Edit Tenant License' : 'Create Tenant'}
+          title={editing ? t('admin.tenants.editTenantLicense') : t('admin.tenants.createTenant')}
           size="lg"
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!editing && (
-              <Input label="Tenant slug" {...register('slug')} error={errors.slug?.message} />
+              <Input label={t('admin.tenants.tenantSlug')} {...register('slug')} error={errors.slug?.message} />
             )}
-            <Input label="Name" {...register('name')} error={errors.name?.message} />
-            <Input label="Plan" {...register('planName')} error={errors.planName?.message} />
+            <Input label={t('admin.tenants.name')} {...register('name')} error={errors.name?.message} />
+            <Input label={t('admin.tenants.plan')} {...register('planName')} error={errors.planName?.message} />
             <Input
-              label="Max users"
+              label={t('admin.tenants.maxUsers')}
               type="number"
               {...register('maxUsers', { valueAsNumber: true })}
               error={errors.maxUsers?.message}
             />
-            <Input label="Active until" type="date" {...register('activeUntil')} />
+            <Input label={t('admin.tenants.activeUntil')} type="date" {...register('activeUntil')} />
 
             <label className="flex items-center gap-2 text-sm text-text-secondary">
               <input type="checkbox" {...register('isActive')} />
-              Active
+              {t('admin.tenants.active')}
             </label>
 
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={isSubmitting}>
-                {editing ? 'Save' : 'Create'}
+                {editing ? t('common.save') : t('common.create')}
               </Button>
               <Button variant="secondary" type="button" onClick={() => setIsModalOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>

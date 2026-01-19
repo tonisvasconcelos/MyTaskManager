@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useCompany } from '../shared/api/companies'
 import { useProjects } from '../shared/api/projects'
 import { Card } from '../components/ui/Card'
@@ -33,6 +34,7 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'danger' 
 }
 
 export function CompanyDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data: company, isLoading: companyLoading } = useCompany(id || '')
   const { data: projects, isLoading: projectsLoading } = useProjects({ companyId: id, page: 1, pageSize: 100 })
@@ -50,7 +52,7 @@ export function CompanyDetailPage() {
   if (!company) {
     return (
       <div>
-        <h1 className="text-3xl font-bold text-text-primary mb-8">Company not found</h1>
+        <h1 className="text-3xl font-bold text-text-primary mb-8">{t('common.noData')}</h1>
       </div>
     )
   }
@@ -59,19 +61,19 @@ export function CompanyDetailPage() {
     <div>
       <div className="mb-6 md:mb-8">
         <Link to="/companies" className="text-accent hover:underline text-sm mb-4 inline-block">
-          ← Back to Companies
+          ← {t('companyDetail.backToCompanies')}
         </Link>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary break-words">{company.name}</h1>
       </div>
 
       <Card className="mb-6 md:mb-8">
-        <h2 className="text-xl font-semibold text-text-primary mb-4">Company Details</h2>
+        <h2 className="text-xl font-semibold text-text-primary mb-4">{t('companyDetail.companyDetails')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-sm">
           {(() => {
             const logoUrl = getLogoUrl(company.id, company.logoUrl)
             return logoUrl ? (
               <div className="md:col-span-2">
-                <span className="text-text-secondary">Logo:</span>
+                <span className="text-text-secondary">{t('companyDetail.logo')}:</span>
                 <div className="mt-2 w-24 h-24 rounded-md overflow-hidden border border-border bg-surface">
                   <img 
                     src={logoUrl} 
@@ -88,19 +90,19 @@ export function CompanyDetailPage() {
           })()}
           {company.email && (
             <div>
-              <span className="text-text-secondary">Email:</span>
+              <span className="text-text-secondary">{t('companyDetail.email')}:</span>
               <p className="text-text-primary">{company.email}</p>
             </div>
           )}
           {company.phone && (
             <div>
-              <span className="text-text-secondary">Phone:</span>
+              <span className="text-text-secondary">{t('companyDetail.phone')}:</span>
               <p className="text-text-primary">{company.phone}</p>
             </div>
           )}
           {company.website && (
             <div>
-              <span className="text-text-secondary">Website:</span>
+              <span className="text-text-secondary">{t('companyDetail.website')}:</span>
               <p className="text-text-primary">
                 <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
                   {company.website}
@@ -110,13 +112,13 @@ export function CompanyDetailPage() {
           )}
           {company.address && (
             <div>
-              <span className="text-text-secondary">Address:</span>
+              <span className="text-text-secondary">{t('companyDetail.address')}:</span>
               <p className="text-text-primary">{company.address}</p>
             </div>
           )}
           {(company.countryCode || company.invoicingCurrencyCode) && (
             <div>
-              <span className="text-text-secondary">Country / Currency:</span>
+              <span className="text-text-secondary">{t('companyDetail.countryCurrency')}:</span>
               <p className="text-text-primary">
                 {company.countryCode || '—'} / {company.invoicingCurrencyCode || '—'}
               </p>
@@ -124,13 +126,13 @@ export function CompanyDetailPage() {
           )}
           {company.taxRegistrationNo && (
             <div>
-              <span className="text-text-secondary">Tax Registration:</span>
+              <span className="text-text-secondary">{t('companyDetail.taxRegistration')}:</span>
               <p className="text-text-primary">{company.taxRegistrationNo}</p>
             </div>
           )}
           {(company.billingUnit || company.unitPrice) && (
             <div>
-              <span className="text-text-secondary">Billing:</span>
+              <span className="text-text-secondary">{t('companyDetail.billing')}:</span>
               <p className="text-text-primary">
                 {company.billingUnit || '—'}
                 {company.unitPrice ? ` · ${company.unitPrice}${company.invoicingCurrencyCode ? ` ${company.invoicingCurrencyCode}` : ''}` : ''}
@@ -139,13 +141,13 @@ export function CompanyDetailPage() {
           )}
           {company.notes && (
             <div className="md:col-span-2">
-              <span className="text-text-secondary">Notes:</span>
+              <span className="text-text-secondary">{t('companyDetail.notes')}:</span>
               <p className="text-text-primary mt-1">{company.notes}</p>
             </div>
           )}
           {company.generalNotes && (
             <div className="md:col-span-2">
-              <span className="text-text-secondary">General Notes:</span>
+              <span className="text-text-secondary">{t('companyDetail.generalNotes')}:</span>
               <p className="text-text-primary mt-1 whitespace-pre-wrap">{company.generalNotes}</p>
             </div>
           )}
@@ -153,7 +155,7 @@ export function CompanyDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="text-xl font-semibold text-text-primary mb-4">Projects</h2>
+        <h2 className="text-xl font-semibold text-text-primary mb-4">{t('companyDetail.projects')}</h2>
         {projectsLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-20" />
@@ -175,22 +177,22 @@ export function CompanyDetailPage() {
                     )}
                     <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
                       {project.startDate && (
-                        <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
+                        <span>{t('projects.startDate')}: {new Date(project.startDate).toLocaleDateString()}</span>
                       )}
                       {project.targetEndDate && (
-                        <span>Target: {new Date(project.targetEndDate).toLocaleDateString()}</span>
+                        <span>{t('projects.targetEndDate')}: {new Date(project.targetEndDate).toLocaleDateString()}</span>
                       )}
                     </div>
                   </div>
                   <Badge variant={statusColors[project.status] || 'default'} className="self-start">
-                    {project.status}
+                    {t(`status.${project.status}`)}
                   </Badge>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <p className="text-text-secondary">No projects found</p>
+          <p className="text-text-secondary">{t('companyDetail.noProjects')}</p>
         )}
       </Card>
     </div>

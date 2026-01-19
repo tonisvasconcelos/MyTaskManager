@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TaskStatus, TaskPriority } from '@prisma/client';
+import { TaskStatus, TaskPriority, TaskBillable } from '@prisma/client';
 
 export const createTaskSchema = z.object({
   body: z.object({
@@ -24,6 +24,7 @@ export const createTaskSchema = z.object({
       .optional(),
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
+    billable: z.nativeEnum(TaskBillable).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
     refTicket: z.string().optional().or(z.null()).or(z.literal('')),
     refLink: z
@@ -62,6 +63,7 @@ export const updateTaskSchema = z.object({
       .optional(),
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
+    billable: z.nativeEnum(TaskBillable).optional(),
     assigneeId: z.string().uuid().optional().or(z.literal('')).or(z.null()),
     refTicket: z.string().optional().or(z.null()).or(z.literal('')),
     refLink: z

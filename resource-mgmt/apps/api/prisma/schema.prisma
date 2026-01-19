@@ -51,6 +51,11 @@ enum TaskPriority {
   High
 }
 
+enum TaskBillable {
+  Billable
+  NonBillable
+}
+
 enum UserRole {
   Admin
   Manager
@@ -115,6 +120,11 @@ model Project {
   @@index([tenantId, status])
 }
 
+enum UserLanguage {
+  EN
+  PT_BR
+}
+
 model User {
   id        String    @id @default(uuid())
   tenantId  String
@@ -122,6 +132,7 @@ model User {
   email     String
   passwordHash String
   role      UserRole @default(Contributor)
+  language  UserLanguage @default(EN)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -144,6 +155,7 @@ model Task {
   estimatedEffortHours Decimal?  @default(0) @db.Decimal(10, 2)
   status            TaskStatus   @default(Backlog)
   priority          TaskPriority @default(Medium)
+  billable          TaskBillable @default(Billable)
   assigneeId        String?
   refTicket         String?      // Reference ticket from Jira/DevOps
   refLink           String?       // Link to ticket in external system

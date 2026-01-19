@@ -61,6 +61,7 @@ export interface User {
   fullName: string
   email: string | null
   role: 'Admin' | 'Manager' | 'Contributor' | null
+  language?: 'EN' | 'PT_BR' | null
   createdAt: string
   updatedAt: string
 }
@@ -75,6 +76,7 @@ export interface Task {
   estimatedEffortHours: string | null
   status: 'Backlog' | 'InProgress' | 'Blocked' | 'Done'
   priority: 'Low' | 'Medium' | 'High'
+  billable: 'Billable' | 'NonBillable'
   assigneeId: string | null
   refTicket: string | null
   refLink: string | null

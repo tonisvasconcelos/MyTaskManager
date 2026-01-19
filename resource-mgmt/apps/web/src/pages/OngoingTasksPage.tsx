@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useOngoingTasks } from '../shared/api/tasks'
 import { useUsers } from '../shared/api/users'
 import { Card } from '../components/ui/Card'
@@ -15,6 +16,7 @@ const priorityColors: Record<string, 'default' | 'warning' | 'danger'> = {
 }
 
 export function OngoingTasksPage() {
+  const { t } = useTranslation()
   const [assigneeFilter, setAssigneeFilter] = useState<string>('')
   const [includeBlocked, setIncludeBlocked] = useState(false)
   const [page, setPage] = useState(1)
@@ -29,7 +31,7 @@ export function OngoingTasksPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-text-primary mb-6 md:mb-8">Ongoing Tasks</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-6 md:mb-8">{t('ongoingTasks.title')}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Select
@@ -39,7 +41,7 @@ export function OngoingTasksPage() {
             setPage(1)
           }}
           options={[
-            { value: '', label: 'All Assignees' },
+            { value: '', label: t('ongoingTasks.allAssignees') },
             ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
           ]}
         />
@@ -55,7 +57,7 @@ export function OngoingTasksPage() {
             className="w-4 h-4"
           />
           <label htmlFor="includeBlocked" className="text-sm text-text-secondary">
-            Include Blocked
+            {t('ongoingTasks.includeBlocked')}
           </label>
         </div>
       </div>
@@ -94,10 +96,13 @@ export function OngoingTasksPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <Badge variant={priorityColors[task.priority] || 'default'}>
-                      {task.priority}
+                      {t(`priority.${task.priority}`)}
+                    </Badge>
+                    <Badge variant={task.billable === 'Billable' ? 'success' : 'default'}>
+                      {t(`billable.${task.billable || 'Billable'}`)}
                     </Badge>
                     <Badge variant={task.status === 'Blocked' ? 'danger' : 'info'}>
-                      {task.status}
+                      {task.status === 'InProgress' ? t('projectDetail.inProgress') : task.status === 'Blocked' ? t('projectDetail.blocked') : task.status === 'Done' ? t('projectDetail.done') : t('projectDetail.backlog')}
                     </Badge>
                   </div>
                 </div>
@@ -114,7 +119,7 @@ export function OngoingTasksPage() {
         </>
       ) : (
         <Card>
-          <p className="text-text-secondary text-center py-8">No ongoing tasks found</p>
+          <p className="text-text-secondary text-center py-8">{t('ongoingTasks.noTasks')}</p>
         </Card>
       )}
     </div>

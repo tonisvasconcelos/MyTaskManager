@@ -29,7 +29,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const user = await prisma.user.findFirst({
       where: { tenantId: tenant.id, email: email.toLowerCase() },
-      select: { id: true, tenantId: true, email: true, passwordHash: true, role: true, fullName: true },
+      select: { id: true, tenantId: true, email: true, passwordHash: true, role: true, fullName: true, language: true },
     });
     if (!user) {
       throw new NotFoundError('User');
@@ -68,7 +68,7 @@ export async function me(req: Request, res: Response, next: NextFunction) {
 
     const user = await prisma.user.findFirst({
       where: { id: auth.userId, tenantId: auth.tenantId },
-      select: { id: true, fullName: true, email: true, role: true, tenantId: true },
+      select: { id: true, fullName: true, email: true, role: true, tenantId: true, language: true },
     });
     if (!user) throw new NotFoundError('User', auth.userId);
 

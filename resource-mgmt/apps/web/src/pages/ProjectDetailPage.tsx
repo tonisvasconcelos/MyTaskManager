@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../shared/api/tasks'
 import { useProject } from '../shared/api/projects'
@@ -22,6 +23,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   status: z.enum(['Backlog', 'InProgress', 'Blocked', 'Done']).optional(),
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
+  billable: z.enum(['Billable', 'NonBillable']).optional(),
   assigneeId: z.string().uuid().optional().or(z.literal('')),
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
@@ -37,11 +39,11 @@ const taskSchema = z.object({
 
 type TaskFormData = z.infer<typeof taskSchema>
 
-const statusColumns = [
-  { status: 'Backlog', label: 'Backlog' },
-  { status: 'InProgress', label: 'In Progress' },
-  { status: 'Blocked', label: 'Blocked' },
-  { status: 'Done', label: 'Done' },
+const getStatusColumns = (t: any) => [
+  { status: 'Backlog', label: t('projectDetail.backlog') },
+  { status: 'InProgress', label: t('projectDetail.inProgress') },
+  { status: 'Blocked', label: t('projectDetail.blocked') },
+  { status: 'Done', label: t('projectDetail.done') },
 ]
 
 const priorityColors: Record<string, 'default' | 'warning' | 'danger'> = {
@@ -51,6 +53,7 @@ const priorityColors: Record<string, 'default' | 'warning' | 'danger'> = {
 }
 
 export function ProjectDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data: project, isLoading: projectLoading } = useProject(id || '')
   const { data: tasksData, isLoading: tasksLoading } = useTasks({ projectId: id, page: 1, pageSize: 1000 })
@@ -58,6 +61,8 @@ export function ProjectDetailPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet'>('tasks')
+  
+  const statusColumns = getStatusColumns(t)
 
   const createMutation = useCreateTask()
   const updateMutation = useUpdateTask()
@@ -74,6 +79,7 @@ export function ProjectDetailPage() {
     defaultValues: {
       status: 'Backlog',
       priority: 'Medium',
+      billable: 'Billable',
     },
   })
 
@@ -143,22 +149,22 @@ export function ProjectDetailPage() {
     <div>
       <div className="mb-6 md:mb-8">
         <Link to="/projects" className="text-accent hover:underline text-sm mb-4 inline-block">
-          ← Back to Projects
+          ← {t('projectDetail.backToProjects')}
         </Link>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary break-words">{project.name}</h1>
-        <p className="text-text-secondary mt-2 break-words">{project.description || 'No description'}</p>
+        <p className="text-text-secondary mt-2 break-words">{project.description || t('common.noData')}</p>
         <div className="flex flex-wrap gap-2 md:gap-4 mt-4">
           <Badge variant={project.status === 'Active' ? 'success' : 'default'}>
-            {project.status}
+            {t(`status.${project.status}`)}
           </Badge>
           {project.startDate && (
             <span className="text-sm text-text-secondary">
-              Start: {new Date(project.startDate).toLocaleDateString()}
+              {t('projects.startDate')}: {new Date(project.startDate).toLocaleDateString()}
             </span>
           )}
           {project.targetEndDate && (
             <span className="text-sm text-text-secondary">
-              Target: {new Date(project.targetEndDate).toLocaleDateString()}
+              {t('projects.targetEndDate')}: {new Date(project.targetEndDate).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -174,7 +180,7 @@ export function ProjectDetailPage() {
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            Tasks
+            {t('projectDetail.tasks')}
           </button>
           <button
             onClick={() => setActiveTab('timesheet')}
@@ -184,7 +190,7 @@ export function ProjectDetailPage() {
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            Timesheet Summary
+            {t('projectDetail.timesheetSummary')}
           </button>
         </div>
       </div>
@@ -192,7 +198,7 @@ export function ProjectDetailPage() {
       {activeTab === 'tasks' && (
         <>
           <div className="mb-4">
-            <Button onClick={openCreateModal}>Create Task</Button>
+            <Button onClick={openCreateModal}>{t('projectDetail.createTask')}</Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -223,7 +229,10 @@ export function ProjectDetailPage() {
                           )}
                           <div className="flex gap-2 flex-wrap">
                             <Badge variant={priorityColors[task.priority] || 'default'} className="text-xs">
-                              {task.priority}
+                              {t(`priority.${task.priority}`)}
+                            </Badge>
+                            <Badge variant={task.billable === 'Billable' ? 'success' : 'default'} className="text-xs">
+                              {t(`billable.${task.billable || 'Billable'}`)}
                             </Badge>
                             {task.estimatedEndDate && (
                               <span className="text-xs text-text-secondary">
@@ -252,7 +261,7 @@ export function ProjectDetailPage() {
                     ))
                   ) : (
                     <div className="text-center text-text-secondary text-sm py-8 border border-dashed border-border rounded-md">
-                      No tasks
+                      {t('projectDetail.noTasks')}
                     </div>
                   )}
                 </div>
@@ -264,70 +273,81 @@ export function ProjectDetailPage() {
 
       {activeTab === 'timesheet' && (
         <Card>
-          <p className="text-text-secondary">Timesheet summary coming soon...</p>
+          <p className="text-text-secondary">{t('projectDetail.comingSoon')}</p>
         </Card>
       )}
 
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create Task"
+        title={t('projectDetail.createTask')}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input
-            label="Title *"
+            label={`${t('tasks.title')} *`}
             {...register('title')}
             error={errors.title?.message}
           />
           <Textarea
-            label="Description"
+            label={t('tasks.description')}
             {...register('description')}
             error={errors.description?.message}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label="Status"
+              label={t('tasks.status')}
               {...register('status')}
               error={errors.status?.message}
               options={statusColumns.map((col) => ({ value: col.status, label: col.label }))}
             />
             <Select
-              label="Priority"
+              label={t('tasks.priority')}
               {...register('priority')}
               error={errors.priority?.message}
               options={[
-                { value: 'Low', label: 'Low' },
-                { value: 'Medium', label: 'Medium' },
-                { value: 'High', label: 'High' },
+                { value: 'Low', label: t('priority.low') },
+                { value: 'Medium', label: t('priority.medium') },
+                { value: 'High', label: t('priority.high') },
               ]}
             />
           </div>
-          <Select
-            label="Assignee"
-            {...register('assigneeId')}
-            error={errors.assigneeId?.message}
-            options={[
-              { value: '', label: 'Unassigned' },
-              ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
-            ]}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label={t('tasks.billable')}
+              {...register('billable')}
+              error={errors.billable?.message}
+              options={[
+                { value: 'Billable', label: t('billable.Billable') },
+                { value: 'NonBillable', label: t('billable.NonBillable') },
+              ]}
+            />
+            <Select
+              label={t('tasks.assignee')}
+              {...register('assigneeId')}
+              error={errors.assigneeId?.message}
+              options={[
+                { value: '', label: t('tasks.unassigned') },
+                ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
+              ]}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Start Date"
+              label={t('tasks.startDate')}
               type="date"
               {...register('startDate')}
               error={errors.startDate?.message}
             />
             <Input
-              label="Estimated End Date"
+              label={t('tasks.estimatedEndDate')}
               type="date"
               {...register('estimatedEndDate')}
               error={errors.estimatedEndDate?.message}
             />
           </div>
           <Input
-            label="Estimated Effort (hours)"
+            label={t('tasks.estimatedEffort')}
             type="number"
             step="0.5"
             min="0"
@@ -336,13 +356,13 @@ export function ProjectDetailPage() {
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Ref. Ticket"
+              label={t('tasks.refTicket')}
               placeholder="e.g., JIRA-123, DEVOPS-456"
               {...register('refTicket')}
               error={errors.refTicket?.message}
             />
             <Input
-              label="Ref. Link"
+              label={t('tasks.refLink')}
               type="url"
               placeholder="https://..."
               {...register('refLink')}
@@ -351,10 +371,10 @@ export function ProjectDetailPage() {
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={createMutation.isPending}>
-              Create
+              {t('common.create')}
             </Button>
             <Button variant="secondary" type="button" onClick={() => setIsCreateModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

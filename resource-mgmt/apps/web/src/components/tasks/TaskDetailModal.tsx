@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTask, useUpdateTask, useDeleteTask } from '../../shared/api/tasks'
 import { useTaskAttachments, useUploadAttachments, useDeleteAttachment } from '../../shared/api/attachments'
 import { useUsers } from '../../shared/api/users'
@@ -20,6 +21,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   status: z.enum(['Backlog', 'InProgress', 'Blocked', 'Done']).optional(),
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
+  billable: z.enum(['Billable', 'NonBillable']).optional(),
   assigneeId: z.string().uuid().optional().or(z.literal('')),
   startDate: z.string().optional().or(z.literal('')),
   estimatedEndDate: z.string().optional().or(z.literal('')),
@@ -48,6 +50,7 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDetailModalProps) {
+  const { t } = useTranslation()
   const { data: task, isLoading } = useTask(initialTask.id)
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(initialTask.id)
   const { data: users } = useUsers()
@@ -72,6 +75,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
       description: currentTask.description || '',
       status: currentTask.status,
       priority: currentTask.priority,
+      billable: currentTask.billable || 'Billable',
       assigneeId: currentTask.assigneeId || '',
       startDate: currentTask.startDate ? new Date(currentTask.startDate).toISOString().split('T')[0] : '',
       estimatedEndDate: currentTask.estimatedEndDate
@@ -118,7 +122,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
   }
 
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (confirm('Are you sure you want to delete this attachment?')) {
+    if (confirm(t('tasks.deleteAttachmentConfirm'))) {
       try {
         await deleteAttachmentMutation.mutateAsync({
           attachmentId,
@@ -131,7 +135,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
   }
 
   const handleDeleteTask = async () => {
-    if (confirm('Are you sure you want to delete this task?')) {
+    if (confirm(t('tasks.deleteConfirm'))) {
       try {
         await deleteMutation.mutateAsync(currentTask.id)
         onClose()
@@ -143,70 +147,81 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
 
   if (isLoading) {
     return (
-      <Modal isOpen={true} onClose={onClose} title="Task Details" size="xl">
+      <Modal isOpen={true} onClose={onClose} title={t('tasks.taskDetails')} size="xl">
         <Skeleton className="h-64" />
       </Modal>
     )
   }
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="Task Details" size="xl">
+    <Modal isOpen={true} onClose={onClose} title={t('tasks.taskDetails')} size="xl">
       {isEditing ? (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Title *" {...register('title')} error={errors.title?.message} />
+          <Input label={`${t('tasks.title')} *`} {...register('title')} error={errors.title?.message} />
           <Textarea
-            label="Description"
+            label={t('tasks.description')}
             {...register('description')}
             error={errors.description?.message}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label="Status"
+              label={t('tasks.status')}
               {...register('status')}
               error={errors.status?.message}
               options={[
-                { value: 'Backlog', label: 'Backlog' },
-                { value: 'InProgress', label: 'In Progress' },
-                { value: 'Blocked', label: 'Blocked' },
-                { value: 'Done', label: 'Done' },
+                { value: 'Backlog', label: t('projectDetail.backlog') },
+                { value: 'InProgress', label: t('projectDetail.inProgress') },
+                { value: 'Blocked', label: t('projectDetail.blocked') },
+                { value: 'Done', label: t('projectDetail.done') },
               ]}
             />
             <Select
-              label="Priority"
+              label={t('tasks.priority')}
               {...register('priority')}
               error={errors.priority?.message}
               options={[
-                { value: 'Low', label: 'Low' },
-                { value: 'Medium', label: 'Medium' },
-                { value: 'High', label: 'High' },
+                { value: 'Low', label: t('priority.Low') },
+                { value: 'Medium', label: t('priority.Medium') },
+                { value: 'High', label: t('priority.High') },
               ]}
             />
           </div>
-          <Select
-            label="Assignee"
-            {...register('assigneeId')}
-            error={errors.assigneeId?.message}
-            options={[
-              { value: '', label: 'Unassigned' },
-              ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
-            ]}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label={t('tasks.billable')}
+              {...register('billable')}
+              error={errors.billable?.message}
+              options={[
+                { value: 'Billable', label: t('billable.Billable') },
+                { value: 'NonBillable', label: t('billable.NonBillable') },
+              ]}
+            />
+            <Select
+              label={t('tasks.assignee')}
+              {...register('assigneeId')}
+              error={errors.assigneeId?.message}
+              options={[
+                { value: '', label: t('tasks.unassigned') },
+                ...(users?.map((u) => ({ value: u.id, label: u.fullName })) || []),
+              ]}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Start Date"
+              label={t('tasks.startDate')}
               type="date"
               {...register('startDate')}
               error={errors.startDate?.message}
             />
             <Input
-              label="Estimated End Date"
+              label={t('tasks.estimatedEndDate')}
               type="date"
               {...register('estimatedEndDate')}
               error={errors.estimatedEndDate?.message}
             />
           </div>
           <Input
-            label="Estimated Effort (hours)"
+            label={t('tasks.estimatedEffort')}
             type="number"
             step="0.5"
             min="0"
@@ -215,13 +230,13 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Ref. Ticket"
+              label={t('tasks.refTicket')}
               placeholder="e.g., JIRA-123, DEVOPS-456"
               {...register('refTicket')}
               error={errors.refTicket?.message}
             />
             <Input
-              label="Ref. Link"
+              label={t('tasks.refLink')}
               type="url"
               placeholder="https://..."
               {...register('refLink')}
@@ -230,7 +245,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
           </div>
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button type="submit" disabled={updateMutation.isPending} className="flex-1 sm:flex-initial">
-              Save
+              {t('common.save')}
             </Button>
             <Button
               variant="secondary"
@@ -241,7 +256,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               }}
               className="flex-1 sm:flex-initial"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>
@@ -253,19 +268,22 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                 <h2 className="text-xl md:text-2xl font-semibold text-text-primary mb-2 break-words">{currentTask.title}</h2>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant={priorityColors[currentTask.priority] || 'default'}>
-                    {currentTask.priority}
+                    {t(`priority.${currentTask.priority}`)}
                   </Badge>
                   <Badge variant={currentTask.status === 'Blocked' ? 'danger' : 'info'}>
-                    {currentTask.status}
+                    {currentTask.status === 'InProgress' ? t('projectDetail.inProgress') : currentTask.status === 'Blocked' ? t('projectDetail.blocked') : currentTask.status === 'Done' ? t('projectDetail.done') : t('projectDetail.backlog')}
+                  </Badge>
+                  <Badge variant={currentTask.billable === 'Billable' ? 'success' : 'default'}>
+                    {t(`billable.${currentTask.billable}`)}
                   </Badge>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)} className="w-full sm:w-auto">
-                  Edit
+                  {t('common.edit')}
                 </Button>
                 <Button variant="danger" size="sm" onClick={handleDeleteTask} className="w-full sm:w-auto">
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             </div>
@@ -273,21 +291,25 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               <p className="text-text-secondary mb-4">{currentTask.description}</p>
             )}
             <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-text-secondary">{t('tasks.billable')}:</span>
+                <p className="text-text-primary">{t(`billable.${currentTask.billable || 'Billable'}`)}</p>
+              </div>
               {currentTask.assignee && (
                 <div>
-                  <span className="text-text-secondary">Assignee:</span>
+                  <span className="text-text-secondary">{t('tasks.assignee')}:</span>
                   <p className="text-text-primary">{currentTask.assignee.fullName}</p>
                 </div>
               )}
               {currentTask.startDate && (
                 <div>
-                  <span className="text-text-secondary">Start Date:</span>
+                  <span className="text-text-secondary">{t('tasks.startDate')}:</span>
                   <p className="text-text-primary">{new Date(currentTask.startDate).toLocaleDateString()}</p>
                 </div>
               )}
               {currentTask.estimatedEndDate && (
                 <div>
-                  <span className="text-text-secondary">Estimated End:</span>
+                  <span className="text-text-secondary">{t('tasks.estimatedEndDate')}:</span>
                   <p className="text-text-primary">
                     {new Date(currentTask.estimatedEndDate).toLocaleDateString()}
                   </p>
@@ -295,19 +317,19 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
               )}
               {currentTask.estimatedEffortHours && (
                 <div>
-                  <span className="text-text-secondary">Estimated Effort:</span>
-                  <p className="text-text-primary">{currentTask.estimatedEffortHours} hours</p>
+                  <span className="text-text-secondary">{t('tasks.estimatedEffort')}:</span>
+                  <p className="text-text-primary">{currentTask.estimatedEffortHours} {t('timesheet.hours')}</p>
                 </div>
               )}
               {currentTask.refTicket && (
                 <div>
-                  <span className="text-text-secondary">Ref. Ticket:</span>
+                  <span className="text-text-secondary">{t('tasks.refTicket')}:</span>
                   <p className="text-text-primary">{currentTask.refTicket}</p>
                 </div>
               )}
               {currentTask.refLink && (
                 <div>
-                  <span className="text-text-secondary">Ref. Link:</span>
+                  <span className="text-text-secondary">{t('tasks.refLink')}:</span>
                   <p className="text-text-primary">
                     <a
                       href={currentTask.refLink}
@@ -324,7 +346,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
           </div>
 
           <div>
-            <h3 className="font-semibold text-text-primary mb-3">Attachments</h3>
+            <h3 className="font-semibold text-text-primary mb-3">{t('tasks.attachments')}</h3>
             <div className="mb-4">
               <FileUpload
                 onFilesSelected={setFilesToUpload}
@@ -340,7 +362,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                   disabled={uploadMutation.isPending}
                   className="mt-2"
                 >
-                  Upload {filesToUpload.length} file(s)
+                  {t('tasks.uploadFiles')} ({filesToUpload.length})
                 </Button>
               )}
             </div>
@@ -366,7 +388,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                 ))}
               </div>
             ) : (
-              <p className="text-text-secondary text-sm">No attachments</p>
+              <p className="text-text-secondary text-sm">{t('tasks.noAttachments')}</p>
             )}
           </div>
         </div>

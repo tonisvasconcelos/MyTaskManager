@@ -48,6 +48,7 @@ export const adminCreateTenantUserSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8).max(128),
     role: z.enum(['Admin', 'Manager', 'Contributor']).optional(),
+    language: z.enum(['EN', 'PT_BR']).optional(),
   }),
 });
 
@@ -65,6 +66,7 @@ export const adminUpdateUserSchema = z.object({
     fullName: z.string().min(1).optional(),
     role: z.enum(['Admin', 'Manager', 'Contributor']).optional(),
     password: z.string().min(8).max(128).optional(),
+    language: z.enum(['EN', 'PT_BR']).optional(),
   }),
 });
 

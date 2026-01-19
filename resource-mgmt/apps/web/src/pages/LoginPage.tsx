@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import { apiClient, setUserToken } from '../shared/api/client'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -21,6 +22,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -48,7 +50,7 @@ export function LoginPage() {
       setUserToken(result.token)
       navigate('/', { replace: true })
     } catch (e: any) {
-      setError(e?.message || 'Login failed')
+      setError(e?.message || t('login.error'))
     }
   }
 
@@ -69,22 +71,22 @@ export function LoginPage() {
               }}
             />
           </div>
-          <h1 className="text-base font-normal text-text-primary">IT Project Company Manager System</h1>
-          <p className="text-text-secondary mt-2">Sign in to your tenant</p>
+          <h1 className="text-base font-normal text-text-primary">{t('login.title')}</h1>
+          <p className="text-text-secondary mt-2">{t('login.subtitle')}</p>
         </div>
         <Card>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input label="Tenant" {...register('tenant')} error={errors.tenant?.message} />
-            <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+            <Input label={t('login.tenant')} {...register('tenant')} error={errors.tenant?.message} />
+            <Input label={t('login.email')} type="email" {...register('email')} error={errors.email?.message} />
             <Input
-              label="Password"
+              label={t('login.password')}
               type="password"
               {...register('password')}
               error={errors.password?.message}
             />
             {error && <p className="text-sm text-red-400">{error}</p>}
             <Button type="submit" disabled={isSubmitting} className="w-full">
-              Sign in
+              {t('login.signIn')}
             </Button>
           </form>
         </Card>

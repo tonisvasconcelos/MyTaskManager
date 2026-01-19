@@ -73,7 +73,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
     // Get all expenses with allocations
     // Only include expenses that have at least one allocation
     let expenses: any[] = [];
+    let expenseAllocations: any[] = [];
+    let projectsMap: Map<string, { id: string; name: string }> = new Map();
+    
     try {
+      // First, fetch expenses with minimal relations to avoid schema validation issues
       expenses = await prisma.expense.findMany({
         where: {
           tenantId,
@@ -90,16 +94,60 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
             },
           },
           allocations: {
-            include: {
-              project: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
+            select: {
+              id: true,
+              expenseId: true,
+              projectId: true,
+              allocatedAmount: true,
+              allocatedPercentage: true,
             },
           },
         },
+      });
+
+      // Get unique project IDs from allocations
+      const projectIds = new Set<string>();
+      expenses.forEach(expense => {
+        expense.allocations?.forEach((alloc: any) => {
+          if (alloc.projectId) {
+            projectIds.add(alloc.projectId);
+          }
+        });
+      });
+
+      // Fetch projects separately to avoid nested relation issues
+      if (projectIds.size > 0) {
+        try {
+          const projects = await prisma.project.findMany({
+            where: {
+              id: { in: Array.from(projectIds) },
+              tenantId,
+            },
+            select: {
+              id: true,
+              name: true,
+            },
+          });
+          projects.forEach(project => {
+            projectsMap.set(project.id, project);
+          });
+        } catch (error: any) {
+          console.warn('Error fetching projects for expenses:', error);
+          // Continue without project names if schema error
+          if (!isSchemaError(error)) {
+            throw error;
+          }
+        }
+      }
+
+      // Attach project data to allocations
+      expenses.forEach(expense => {
+        if (expense.allocations) {
+          expense.allocations = expense.allocations.map((alloc: any) => ({
+            ...alloc,
+            project: projectsMap.get(alloc.projectId) || { id: alloc.projectId, name: 'Unknown' },
+          }));
+        }
       });
     } catch (error: any) {
       console.error('Error fetching expenses:', error);
@@ -136,18 +184,64 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
                 },
               },
               allocations: {
-                include: {
-                  project: {
-                    select: {
-                      id: true,
-                      name: true,
-                    },
-                  },
+                select: {
+                  id: true,
+                  expenseId: true,
+                  projectId: true,
+                  allocatedAmount: true,
+                  allocatedPercentage: true,
                 },
               },
             },
           },
         },
+      });
+
+      // Attach project data to payment expense allocations
+      const paymentProjectIds = new Set<string>();
+      payments.forEach(payment => {
+        payment.expense.allocations?.forEach((alloc: any) => {
+          if (alloc.projectId) {
+            paymentProjectIds.add(alloc.projectId);
+          }
+        });
+      });
+
+      // Fetch projects for payments if not already fetched
+      if (paymentProjectIds.size > 0) {
+        const missingProjectIds = Array.from(paymentProjectIds).filter(id => !projectsMap.has(id));
+        if (missingProjectIds.length > 0) {
+          try {
+            const paymentProjects = await prisma.project.findMany({
+              where: {
+                id: { in: missingProjectIds },
+                tenantId,
+              },
+              select: {
+                id: true,
+                name: true,
+              },
+            });
+            paymentProjects.forEach(project => {
+              projectsMap.set(project.id, project);
+            });
+          } catch (error: any) {
+            console.warn('Error fetching projects for payments:', error);
+            if (!isSchemaError(error)) {
+              throw error;
+            }
+          }
+        }
+      }
+
+      // Attach project data to payment expense allocations
+      payments.forEach(payment => {
+        if (payment.expense.allocations) {
+          payment.expense.allocations = payment.expense.allocations.map((alloc: any) => ({
+            ...alloc,
+            project: projectsMap.get(alloc.projectId) || { id: alloc.projectId, name: 'Unknown' },
+          }));
+        }
       });
     } catch (error: any) {
       console.error('Error fetching payments:', error);

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma.js';
 
 export interface ProjectFinancialEntry {
@@ -21,6 +22,47 @@ export interface ProjectFinancialSummary {
   totalPayments: number;
   totalSales: number;
   netAmount: number; // sales - expenses
+}
+
+// Helper function to check if an error is a schema-related Prisma error
+function isSchemaError(error: any): boolean {
+  // Check if it's a Prisma error instance
+  const isPrismaError = error instanceof Prisma.PrismaClientKnownRequestError ||
+                       error instanceof Prisma.PrismaClientValidationError ||
+                       error instanceof Prisma.PrismaClientRustPanicError ||
+                       error instanceof Prisma.PrismaClientInitializationError ||
+                       (error?.constructor?.name?.includes('Prisma'));
+  
+  if (!isPrismaError) {
+    return false;
+  }
+  
+  // Check for specific Prisma error codes that indicate schema issues
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    const schemaErrorCodes = ['P2001', 'P2021', 'P2022', 'P2010', 'P2011'];
+    if (schemaErrorCodes.includes(error.code)) {
+      return true;
+    }
+  }
+  
+  // Check error message for schema-related keywords
+  const errorMessage = (error?.message || '').toLowerCase();
+  const schemaKeywords = [
+    'does not exist',
+    'unknown column',
+    'relation',
+    'table',
+    'column',
+    'schema',
+    'migration',
+    'billable',
+    'language'
+  ];
+  
+  // Check if message contains schema-related keywords
+  const hasSchemaKeywords = schemaKeywords.some(keyword => errorMessage.includes(keyword));
+  
+  return hasSchemaKeywords;
 }
 
 export async function getProjectFinancialEntries(req: Request, res: Response, next: NextFunction) {
@@ -61,17 +103,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
       });
     } catch (error: any) {
       console.error('Error fetching expenses:', error);
-      // If schema error (missing table/column), return empty array
-      const isSchemaError = error?.code === 'P2001' || 
-                           error?.code === 'P2021' || 
-                           error?.code === 'P2022' ||
-                           error?.message?.includes('does not exist') || 
-                           error?.message?.includes('Unknown column') ||
-                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
-      if (isSchemaError) {
-        console.warn('Expenses table may not exist or schema mismatch. Returning empty array.');
+      if (isSchemaError(error)) {
+        console.warn('Expenses query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
         expenses = [];
       } else {
+        // Re-throw non-schema errors
         throw error;
       }
     }
@@ -115,17 +151,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
       });
     } catch (error: any) {
       console.error('Error fetching payments:', error);
-      // If schema error (missing table/column), return empty array
-      const isSchemaError = error?.code === 'P2001' || 
-                           error?.code === 'P2021' || 
-                           error?.code === 'P2022' ||
-                           error?.message?.includes('does not exist') || 
-                           error?.message?.includes('Unknown column') ||
-                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
-      if (isSchemaError) {
-        console.warn('Payments table may not exist or schema mismatch. Returning empty array.');
+      if (isSchemaError(error)) {
+        console.warn('Payments query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
         payments = [];
       } else {
+        // Re-throw non-schema errors
         throw error;
       }
     }
@@ -147,17 +177,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
       });
     } catch (error: any) {
       console.error('Error fetching sales:', error);
-      // If schema error (missing table/column), return empty array
-      const isSchemaError = error?.code === 'P2001' || 
-                           error?.code === 'P2021' || 
-                           error?.code === 'P2022' ||
-                           error?.message?.includes('does not exist') || 
-                           error?.message?.includes('Unknown column') ||
-                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
-      if (isSchemaError) {
-        console.warn('Sales table may not exist or schema mismatch. Returning empty array.');
+      if (isSchemaError(error)) {
+        console.warn('Sales query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
         sales = [];
       } else {
+        // Re-throw non-schema errors
         throw error;
       }
     }

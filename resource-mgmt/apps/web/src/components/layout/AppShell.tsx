@@ -86,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
               : '-translate-x-full md:translate-x-0'
           } ${isSidebarOpen ? 'md:w-64' : 'md:w-16'}`}
         >
-          <div className="p-4 h-full overflow-y-auto">
+          <div className="p-4 h-full overflow-y-auto relative">
             {/* Hamburger Menu Button */}
             <button
               onClick={(e) => {
@@ -94,12 +94,17 @@ export function AppShell({ children }: AppShellProps) {
                 e.stopPropagation()
                 toggleSidebar()
               }}
-              className="mb-6 p-2 bg-surface/50 border border-border rounded-md text-text-primary hover:bg-surface/80 transition-colors w-full flex items-center justify-center cursor-pointer relative z-10"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              className="mb-6 p-2 bg-surface/50 border border-border rounded-md text-text-primary hover:bg-surface/80 active:bg-surface transition-colors w-full flex items-center justify-center cursor-pointer relative z-50 pointer-events-auto"
               aria-label="Toggle sidebar"
               type="button"
+              style={{ touchAction: 'manipulation' }}
             >
               <svg
-                className="w-5 h-5"
+                className="w-5 h-5 pointer-events-none"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"

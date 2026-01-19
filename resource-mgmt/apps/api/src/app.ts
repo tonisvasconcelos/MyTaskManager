@@ -87,9 +87,6 @@ export function createApp(): Express {
   app.use('/api', attachmentsRouter);
   app.use('/api', timesheetRouter);
   app.use('/api/procurements', procurementsRouter);
-  app.use('/api/payments', paymentsRouter);
-  app.use('/api/sales', salesRouter);
-  app.use('/api/finance', financeRouter);
 
   // Error handler (must be last)
   app.use(errorHandler);

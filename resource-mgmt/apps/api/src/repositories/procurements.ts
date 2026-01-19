@@ -348,7 +348,13 @@ export async function updateProcurement(
     }>;
   }
 ): Promise<ExpenseWithRelations> {
-  return prisma.$transaction(async (tx) => {
+  // Ensure documentUrl column exists if we're trying to update it
+  if (data.documentUrl !== undefined) {
+    await ensureDocumentUrlColumnExists();
+  }
+
+  try {
+    return await prisma.$transaction(async (tx) => {
     // Get current expense to use totalAmount for percentage calculations if needed
     const currentExpense = await tx.expense.findUnique({ where: { id } });
     const total = data.totalAmount !== undefined
@@ -380,24 +386,32 @@ export async function updateProcurement(
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
-    // Only include documentUrl if column exists (will be handled by try-catch if missing)
-    if (data.documentUrl !== undefined) {
+    if (data.documentUrl !== undefined) updateData.documentUrl = data.documentUrl || null;
+
+      // Update expense
       try {
-        updateData.documentUrl = data.documentUrl || null;
-      } catch (error: any) {
-        // If documentUrl column doesn't exist, skip it
-        const errorMessage = (error?.message || '').toLowerCase();
-        if (!errorMessage.includes('documenturl')) {
-          throw error;
+        await tx.expense.update({
+          where: { id },
+          data: updateData,
+        });
+      } catch (updateError: any) {
+        // If error is due to missing documentUrl column, retry without it
+        const errorMessage = (updateError?.message || '').toLowerCase();
+        if (errorMessage.includes('documenturl') || 
+            (updateError instanceof PrismaNamespace.PrismaClientKnownRequestError && 
+             (updateError.code === 'P2021' || updateError.code === 'P2022'))) {
+          console.warn('Expense update failed due to missing documentUrl column. Retrying without it.');
+          // Remove documentUrl and retry
+          const updateDataWithoutDocUrl = { ...updateData };
+          delete updateDataWithoutDocUrl.documentUrl;
+          await tx.expense.update({
+            where: { id },
+            data: updateDataWithoutDocUrl,
+          });
+        } else {
+          throw updateError;
         }
       }
-    }
-
-    // Update expense
-    await tx.expense.update({
-      where: { id },
-      data: updateData,
-    });
 
     // If allocations are provided, replace them
     if (data.allocations !== undefined) {
@@ -459,8 +473,21 @@ export async function updateProcurement(
       },
     });
 
-    return expenseWithRelations as ExpenseWithRelations;
-  });
+      return expenseWithRelations as ExpenseWithRelations;
+    });
+  } catch (error: any) {
+    console.error('Error updating procurement:', error);
+    if (isSchemaError(error)) {
+      console.warn('Procurement update failed due to schema mismatch. Error:', error?.message || error?.code);
+      const errorMessage = (error?.message || '').toLowerCase();
+      if (errorMessage.includes('documenturl')) {
+        throw new Error('Database schema mismatch: The documentUrl column is missing. Please run: npx prisma migrate deploy');
+      }
+      throw new Error('Database schema mismatch. The database is missing required columns. Please run: npx prisma migrate deploy');
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }
 
 export async function deleteProcurement(id: string): Promise<void> {

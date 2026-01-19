@@ -158,24 +158,37 @@ export async function findPaymentByIdForTenant(
 // Helper function to ensure currency columns exist
 async function ensureCurrencyColumnsExist(): Promise<void> {
   try {
-    // Check if columns exist by trying to query them
-    await prisma.$queryRaw`SELECT "paymentCurrencyCode", "amountLCY" FROM "Payment" LIMIT 1`;
-  } catch (error: any) {
-    const errorMessage = (error?.message || '').toLowerCase();
-    if (errorMessage.includes('column') && (errorMessage.includes('paymentcurrencycode') || errorMessage.includes('amountlcy'))) {
-      console.warn('Currency columns missing, creating them now...');
+    // Check if columns exist by querying information_schema
+    const result = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'Payment' 
+      AND column_name IN ('paymentCurrencyCode', 'amountLCY')
+    `;
+    
+    const existingColumns = result.map(r => r.column_name.toLowerCase());
+    const needsPaymentCurrencyCode = !existingColumns.includes('paymentcurrencycode');
+    const needsAmountLCY = !existingColumns.includes('amountlcy');
+    
+    if (needsPaymentCurrencyCode || needsAmountLCY) {
+      console.warn('Currency columns missing, creating them now...', { needsPaymentCurrencyCode, needsAmountLCY });
       try {
         // Create columns directly using raw SQL
-        await prisma.$executeRawUnsafe(`
-          ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "paymentCurrencyCode" VARCHAR(3);
-          ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "amountLCY" DECIMAL(10,2);
-        `);
+        if (needsPaymentCurrencyCode) {
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "paymentCurrencyCode" VARCHAR(3);`);
+        }
+        if (needsAmountLCY) {
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "amountLCY" DECIMAL(10,2);`);
+        }
         console.log('Currency columns created successfully');
       } catch (createError: any) {
         console.error('Failed to create currency columns:', createError);
         // Don't throw - we'll handle missing columns in the create logic
       }
     }
+  } catch (error: any) {
+    // If we can't check, log but don't fail - the create logic will handle it
+    console.warn('Could not check for currency columns, will rely on create retry logic:', error?.message);
   }
 }
 

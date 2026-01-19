@@ -17,7 +17,7 @@ import { TaskDetailModal } from '../components/tasks/TaskDetailModal'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import type { Task, Expense } from '../shared/types/api'
+import type { Task } from '../shared/types/api'
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),

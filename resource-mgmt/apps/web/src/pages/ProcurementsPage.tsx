@@ -5,7 +5,6 @@ import { useDebounce } from '../shared/hooks/useDebounce'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { Modal } from '../components/ui/Modal'
 import { Pagination } from '../components/ui/Pagination'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Badge } from '../components/ui/Badge'
@@ -16,13 +15,6 @@ const paymentStatusColors: Record<string, 'default' | 'warning' | 'success' | 'd
   PENDING: 'warning',
   PARTIALLY_PAID: 'default',
   PAID: 'success',
-}
-
-const paymentMethodLabels: Record<string, string> = {
-  CORPORATE_CREDIT_CARD: 'Credit Card',
-  BANK_TRANSFER: 'Bank Transfer',
-  PAYPAL: 'PayPal',
-  OTHER: 'Other',
 }
 
 export function ProcurementsPage() {

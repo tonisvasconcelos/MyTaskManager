@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCreateCompany, useCompanies } from '../../shared/api/companies'
 import { Modal } from '../ui/Modal'

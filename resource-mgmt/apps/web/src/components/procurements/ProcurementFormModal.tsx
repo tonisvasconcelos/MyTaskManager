@@ -12,7 +12,7 @@ import { Textarea } from '../ui/Textarea'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { Expense, PaymentMethod, PaymentStatus } from '../../shared/types/api'
+import type { Expense } from '../../shared/types/api'
 
 const allocationSchema = z.object({
   projectId: z.string().uuid('Invalid project ID'),
@@ -172,6 +172,7 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
     try {
       const payload = {
         ...data,
+        totalAmount: typeof data.totalAmount === 'number' ? data.totalAmount.toString() : data.totalAmount,
         allocations: data.allocations.map((alloc) => ({
           projectId: alloc.projectId,
           allocatedAmount: typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount),
@@ -179,7 +180,7 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
       }
 
       if (expense) {
-        await updateMutation.mutateAsync({ id: expense.id, ...payload })
+        await updateMutation.mutateAsync({ id: expense.id, ...payload } as any)
       } else {
         await createMutation.mutateAsync(payload as any)
       }

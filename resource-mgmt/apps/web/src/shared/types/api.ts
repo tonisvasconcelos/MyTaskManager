@@ -174,6 +174,7 @@ export interface Expense {
   paymentMethod: PaymentMethod
   status: PaymentStatus
   notes: string | null
+  documentUrl: string | null
   createdAt: string
   updatedAt: string
   company?: {

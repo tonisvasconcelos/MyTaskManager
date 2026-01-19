@@ -104,6 +104,7 @@ export const createProcurementSchema = z
         paymentMethod: z.nativeEnum(PaymentMethod),
         status: z.nativeEnum(PaymentStatus).optional(),
         notes: z.string().optional(),
+        documentUrl: z.string().url('Invalid URL format').optional().nullable(),
         allocations: z.array(allocationSchema).min(1, 'At least one allocation is required'),
       })
       .refine(
@@ -206,6 +207,7 @@ export const updateProcurementSchema = z
         paymentMethod: z.nativeEnum(PaymentMethod).optional(),
         status: z.nativeEnum(PaymentStatus).optional(),
         notes: z.string().optional(),
+        documentUrl: z.string().url('Invalid URL format').optional().nullable(),
         allocations: z.array(allocationSchema).min(1, 'At least one allocation is required').optional(),
       })
       .refine(

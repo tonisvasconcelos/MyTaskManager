@@ -243,6 +243,7 @@ model Expense {
   paymentMethod       PaymentMethod
   status              PaymentStatus  @default(PENDING)
   notes               String?        @db.Text
+  documentUrl         String?        @db.Text
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

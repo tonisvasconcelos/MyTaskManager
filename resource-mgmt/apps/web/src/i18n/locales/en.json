@@ -243,6 +243,8 @@
     "paymentMethod": "Payment Method",
     "paymentStatus": "Payment Status",
     "notes": "Notes",
+    "documentUrl": "Document URL",
+    "viewDocument": "View Document",
     "deleteConfirm": "Are you sure you want to delete this expense?",
     "noExpenses": "No expenses found",
     "addNewCompany": "Add New Company",

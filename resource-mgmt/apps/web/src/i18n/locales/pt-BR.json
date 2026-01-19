@@ -243,6 +243,8 @@
     "paymentMethod": "Método de Pagamento",
     "paymentStatus": "Status do Pagamento",
     "notes": "Notas",
+    "documentUrl": "URL do Documento",
+    "viewDocument": "Ver Documento",
     "deleteConfirm": "Tem certeza que deseja excluir esta despesa?",
     "noExpenses": "Nenhuma despesa encontrada",
     "addNewCompany": "Adicionar Nova Empresa",

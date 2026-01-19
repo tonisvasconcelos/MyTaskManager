@@ -118,6 +118,7 @@ export async function createProcurement(
     paymentMethod: PaymentMethod;
     status?: PaymentStatus;
     notes?: string | null;
+    documentUrl?: string | null;
     allocations: Array<{
       projectId: string;
       allocatedAmount?: number | string | null;
@@ -144,6 +145,7 @@ export async function createProcurement(
         paymentMethod: data.paymentMethod,
         status: data.status || 'PENDING',
         notes: data.notes || null,
+        documentUrl: data.documentUrl || null,
       },
     });
 
@@ -254,6 +256,7 @@ export async function updateProcurement(
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
+    if (data.documentUrl !== undefined) updateData.documentUrl = data.documentUrl || null;
 
     // Update expense
     await tx.expense.update({

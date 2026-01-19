@@ -156,6 +156,7 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
       paymentMethod: 'CORPORATE_CREDIT_CARD',
       status: 'PENDING',
       notes: '',
+      documentUrl: null,
       allocations: [{ projectId: '', allocatedAmount: undefined, allocatedPercentage: undefined }],
     },
   })
@@ -198,6 +199,7 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
         paymentMethod: expense.paymentMethod,
         status: expense.status,
         notes: expense.notes || '',
+        documentUrl: expense.documentUrl || null,
         allocations:
           expense.allocations && expense.allocations.length > 0
             ? expense.allocations.map((alloc) => ({
@@ -403,6 +405,14 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
             label={t('procurements.notes')}
             {...register('notes')}
             error={errors.notes?.message}
+          />
+
+          <Input
+            label={t('procurements.documentUrl')}
+            type="url"
+            placeholder="https://example.com/invoice.pdf"
+            {...register('documentUrl')}
+            error={errors.documentUrl?.message}
           />
 
           <div className="border-t border-border pt-4">

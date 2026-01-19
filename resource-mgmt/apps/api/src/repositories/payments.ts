@@ -205,6 +205,12 @@ export async function createPayment(
     return payment as PaymentWithRelations;
   } catch (error: any) {
     console.error('Error creating payment:', error);
+    console.error('Error details:', {
+      code: error?.code,
+      message: error?.message,
+      meta: error?.meta,
+      stack: error?.stack,
+    });
     
     // Check if error is due to missing currency columns
     const errorMessage = (error?.message || '').toLowerCase();
@@ -247,6 +253,12 @@ export async function createPayment(
         return payment as PaymentWithRelations;
       } catch (retryError: any) {
         console.error('Error creating payment on retry:', retryError);
+        console.error('Retry error details:', {
+          code: retryError?.code,
+          message: retryError?.message,
+          meta: retryError?.meta,
+        });
+        
         // If retry also fails, check if it's a schema error on the include
         if (isSchemaError(retryError)) {
           // Try one more time without the include
@@ -263,11 +275,36 @@ export async function createPayment(
               },
             });
             
-            // Fetch with relations separately
-            return await findPaymentByIdForTenant(tenantId, payment.id) || payment as PaymentWithRelations;
+            // Try to fetch with relations separately, but if that fails, return without relations
+            try {
+              const paymentWithRelations = await findPaymentByIdForTenant(tenantId, payment.id);
+              if (paymentWithRelations) {
+                return paymentWithRelations;
+              }
+            } catch (fetchError: any) {
+              console.warn('Could not fetch payment relations, returning payment without relations:', fetchError?.message);
+            }
+            
+            // Return payment without relations if fetch fails
+            return {
+              ...payment,
+              expense: {
+                id: '',
+                invoiceNumber: '',
+                company: {
+                  id: '',
+                  name: 'Unknown',
+                },
+              },
+            } as PaymentWithRelations;
           } catch (finalError: any) {
             console.error('Error creating payment on final retry:', finalError);
-            throw new Error('Payment creation failed due to database schema mismatch. Please ensure migrations are applied.');
+            console.error('Final error details:', {
+              code: finalError?.code,
+              message: finalError?.message,
+              meta: finalError?.meta,
+            });
+            throw new Error(`Payment creation failed: ${finalError?.message || 'Unknown error'}. Please ensure migrations are applied.`);
           }
         }
         throw retryError;

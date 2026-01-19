@@ -217,6 +217,7 @@ export async function updateProcurement(
     paymentMethod?: PaymentMethod;
     status?: PaymentStatus;
     notes?: string | null;
+    documentUrl?: string | null;
     allocations?: Array<{
       projectId: string;
       allocatedAmount?: number | string | null;

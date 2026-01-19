@@ -91,6 +91,23 @@ export function errorHandler(
     });
   }
 
+  // Check for database schema errors in generic errors
+  if (err instanceof Error) {
+    const errorMessage = err.message || '';
+    if (errorMessage.includes('billable') || errorMessage.includes('language') || 
+        errorMessage.includes('Unknown column') || errorMessage.includes('column') && errorMessage.includes('does not exist') ||
+        errorMessage.includes('DATABASE_SCHEMA_MISMATCH')) {
+      console.error('Database schema mismatch detected:', err);
+      return res.status(500).json({
+        error: {
+          code: 'DATABASE_SCHEMA_ERROR',
+          message: 'Database schema mismatch. Please ensure all migrations have been applied. The database is missing required fields (billable, language).',
+          details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        },
+      });
+    }
+  }
+
   // Unknown errors
   console.error('Unhandled error:', err);
   return res.status(500).json({

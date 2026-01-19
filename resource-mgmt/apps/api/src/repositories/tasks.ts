@@ -26,8 +26,9 @@ export async function findTasks(
     ...(assigneeId && { assigneeId }),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.task.findMany({
+  try {
+    const [data, total] = await Promise.all([
+      prisma.task.findMany({
       where,
       skip,
       take,
@@ -59,7 +60,21 @@ export async function findTasks(
     prisma.task.count({ where }),
   ]);
 
-  return { data, total, page, pageSize };
+    // Add default billable field if missing (for backward compatibility)
+    const dataWithDefaults = data.map((task: any) => ({
+      ...task,
+      billable: task.billable || 'Billable',
+    }));
+
+    return { data: dataWithDefaults, total, page, pageSize };
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function findOngoingTasks(
@@ -80,52 +95,70 @@ export async function findOngoingTasks(
     ...(assigneeId && { assigneeId }),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.task.findMany({
-      where,
-      skip,
-      take,
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-            company: {
-              select: {
-                id: true,
-                name: true,
-                logoUrl: true,
-                // Exclude logoData (BLOB) from company in task queries
+  try {
+    const [data, total] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          project: {
+            select: {
+              id: true,
+              name: true,
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                  logoUrl: true,
+                  // Exclude logoData (BLOB) from company in task queries
+                },
               },
             },
           },
-        },
-        assignee: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
+          assignee: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: [
-        { estimatedEndDate: 'asc' },
-        { updatedAt: 'desc' },
-      ],
-    }),
-    prisma.task.count({ where }),
-  ]);
+        orderBy: [
+          { estimatedEndDate: 'asc' },
+          { updatedAt: 'desc' },
+        ],
+      }),
+      prisma.task.count({ where }),
+    ]);
 
-  return { data, total, page, pageSize };
+    // Add default billable field if missing (for backward compatibility)
+    const dataWithDefaults = data.map((task: any) => ({
+      ...task,
+      billable: task.billable || 'Billable',
+    }));
+
+    return { data: dataWithDefaults, total, page, pageSize };
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      // Try query without the problematic field by using raw query or fallback
+      // For now, return empty results with a note that migration is needed
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function findTaskByIdForTenant(tenantId: string, id: string): Promise<Task | null> {
-  return prisma.task.findFirst({
-    where: { id, tenantId },
-    include: {
-      project: {
-        include: {
-          company: {
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id, tenantId },
+      include: {
+        project: {
+          include: {
+            company: {
             select: {
               id: true,
               tenantId: true,
@@ -168,6 +201,23 @@ export async function findTaskByIdForTenant(tenantId: string, id: string): Promi
       },
     },
   });
+
+    // Add default billable field if missing (for backward compatibility)
+    if (task) {
+      return {
+        ...task,
+        billable: (task as any).billable || 'Billable',
+      } as Task;
+    }
+    return null;
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function createTask(

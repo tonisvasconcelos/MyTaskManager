@@ -19,46 +19,53 @@ import { adminRouter } from './routes/admin.js';
 export function createApp(): Express {
   const app = express();
 
-  // CORS
-  app.use(
-    cors({
-      // No auth/cookies in v1 -> no credentials needed. Allow configured origins + localhost.
-      origin: (origin, callback) => {
-        const defaultOrigins = [
-          'http://localhost:5173',
-          'http://localhost:5174',
-          'http://localhost:5175',
-          // GitHub Pages (this repo)
-          'https://tonisvasconcelos.github.io',
-        ];
-        const envOrigins = (process.env.CORS_ORIGINS || '')
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const allowed = [...defaultOrigins, ...envOrigins];
+  // CORS - Configure before other middleware
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const defaultOrigins = [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        // GitHub Pages (this repo) - exact match
+        'https://tonisvasconcelos.github.io',
+      ];
+      const envOrigins = (process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowed = [...defaultOrigins, ...envOrigins];
 
-        // Allow same-origin / curl / server-to-server (no Origin header)
-        if (!origin) {
-          return callback(null, true);
-        }
+      // Allow same-origin / curl / server-to-server (no Origin header)
+      if (!origin) {
+        return callback(null, true);
+      }
 
-        if (allowed.includes(origin)) {
-          return callback(null, true);
-        }
+      // Exact match first
+      if (allowed.includes(origin)) {
+        return callback(null, true);
+      }
 
-        // Allow GitHub Pages origins in general (optional convenience for MVP)
-        // Match patterns like: https://username.github.io or https://username.github.io/MyTaskManager
-        if (/^https:\/\/[a-z0-9-]+\.github\.io(\/.*)?$/i.test(origin)) {
-          return callback(null, true);
-        }
+      // Allow GitHub Pages origins in general (optional convenience for MVP)
+      // Match patterns like: https://username.github.io or https://username.github.io/MyTaskManager
+      if (/^https:\/\/[a-z0-9-]+\.github\.io(\/.*)?$/i.test(origin)) {
+        return callback(null, true);
+      }
 
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
-      },
-      credentials: false,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
+      // Log blocked origin for debugging
+      console.warn(`CORS blocked for origin: ${origin}`);
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  };
+
+  app.use(cors(corsOptions));
+  
+  // Explicitly handle OPTIONS requests for all routes (additional safety)
+  app.options('*', cors(corsOptions));
 
   // Body parsing
   app.use(express.json());

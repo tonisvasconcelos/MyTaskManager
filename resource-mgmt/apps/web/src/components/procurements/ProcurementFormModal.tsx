@@ -238,8 +238,8 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
           // Check if values exist and are not empty strings
           const amountValue = alloc.allocatedAmount
           const percentageValue = alloc.allocatedPercentage
-          const hasAmount = amountValue !== undefined && amountValue !== null && amountValue !== ''
-          const hasPercentage = percentageValue !== undefined && percentageValue !== null && percentageValue !== ''
+          const hasAmount = amountValue !== undefined && amountValue !== null && String(amountValue) !== ''
+          const hasPercentage = percentageValue !== undefined && percentageValue !== null && String(percentageValue) !== ''
           
           // Only include the field that has a value, omit the other one completely
           const allocationData: any = {

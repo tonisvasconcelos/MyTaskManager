@@ -76,6 +76,36 @@ function parseDecimalInput(value: unknown): number | null {
   return null;
 }
 
+// Helper function to ensure documentUrl column exists
+async function ensureDocumentUrlColumnExists(): Promise<void> {
+  try {
+    // Check if column exists by querying information_schema
+    const result = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'Expense' 
+      AND column_name = 'documentUrl'
+    `;
+    
+    const hasDocumentUrl = result.length > 0;
+    
+    if (!hasDocumentUrl) {
+      console.warn('documentUrl column missing, creating it now...');
+      try {
+        // Create column directly using raw SQL
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Expense" ADD COLUMN IF NOT EXISTS "documentUrl" TEXT;`);
+        console.log('documentUrl column created successfully');
+      } catch (createError: any) {
+        console.error('Failed to create documentUrl column:', createError);
+        // Don't throw - we'll handle missing column in the create logic
+      }
+    }
+  } catch (error: any) {
+    // If we can't check, log but don't fail - the create logic will handle it
+    console.warn('Could not check for documentUrl column, will rely on create retry logic:', error?.message);
+  }
+}
+
 function normalizeAllocationsForCreateMany(
   allocations: Array<{
     projectId: string;
@@ -277,9 +307,17 @@ export async function createProcurement(
     }>;
   }
 ): Promise<ExpenseWithRelations> {
+  // Ensure documentUrl column exists before starting transaction
+  await ensureDocumentUrlColumnExists();
+  
   // Use transaction to ensure atomicity
-  try {
-    return await prisma.$transaction(async (tx) => {
+  // Retry entire transaction if it fails due to missing documentUrl column
+  let retryCount = 0;
+  const maxRetries = 2;
+  
+  while (retryCount < maxRetries) {
+    try {
+      return await prisma.$transaction(async (tx) => {
       const total = parseDecimalInput(data.totalAmount) ?? 0;
       if (!Number.isFinite(total) || total <= 0) {
         throw new ValidationError('Total amount must be a positive number');
@@ -301,32 +339,15 @@ export async function createProcurement(
         notes: data.notes || null,
       };
       
-      // Only include documentUrl if provided (will fail gracefully if column doesn't exist)
+      // Only include documentUrl if provided
       if (data.documentUrl !== undefined && data.documentUrl !== null) {
         expenseData.documentUrl = data.documentUrl;
       }
       
-      // Create expense - retry without documentUrl if column doesn't exist
-      let expense;
-      try {
-        expense = await tx.expense.create({
-          data: expenseData,
-        });
-      } catch (createError: any) {
-        // If error is due to missing documentUrl column, retry without it
-        const errorMessage = (createError?.message || '').toLowerCase();
-        if (errorMessage.includes('documenturl') || 
-            (createError instanceof PrismaNamespace.PrismaClientKnownRequestError && 
-             (createError.code === 'P2021' || createError.code === 'P2022'))) {
-          console.warn('Expense creation failed due to missing documentUrl column. Retrying without it.');
-          delete expenseData.documentUrl;
-          expense = await tx.expense.create({
-            data: expenseData,
-          });
-        } else {
-          throw createError;
-        }
-      }
+      // Create expense
+      const expense = await tx.expense.create({
+        data: expenseData,
+      });
 
       // Create allocations - calculate amount from percentage if needed
       const normalizedAllocations = normalizeAllocationsForCreateMany(data.allocations, total);
@@ -360,22 +381,42 @@ export async function createProcurement(
         },
       });
 
-      return expenseWithRelations as ExpenseWithRelations;
-    });
-  } catch (error: any) {
-    console.error('Error creating procurement:', error);
-    if (isSchemaError(error)) {
-      console.warn('Procurement creation failed due to schema mismatch. Error:', error?.message || error?.code);
-      // Check if it's specifically about documentUrl column
+        return expenseWithRelations as ExpenseWithRelations;
+      });
+    } catch (error: any) {
+      console.error(`Error creating procurement (attempt ${retryCount + 1}/${maxRetries}):`, error);
+      
+      // Check if error is due to missing documentUrl column
       const errorMessage = (error?.message || '').toLowerCase();
-      if (errorMessage.includes('documenturl')) {
-        throw new Error('Database schema mismatch: The documentUrl column is missing. Please run: npx prisma migrate deploy');
+      const isDocumentUrlError = errorMessage.includes('documenturl') || 
+                             (error instanceof PrismaNamespace.PrismaClientKnownRequestError && 
+                              (error.code === 'P2021' || error.code === 'P2022'));
+      
+      // If it's a documentUrl error and we haven't retried yet, try again without documentUrl
+      if (isDocumentUrlError && retryCount === 0 && data.documentUrl) {
+        console.warn('Expense creation failed due to missing documentUrl column. Retrying without it.');
+        // Remove documentUrl and retry
+        data = { ...data, documentUrl: null };
+        retryCount++;
+        continue; // Retry the entire transaction
       }
-      throw new Error('Database schema mismatch. The database is missing required columns. Please run: npx prisma migrate deploy');
+      
+      // If it's a schema error, throw a helpful message
+      if (isSchemaError(error)) {
+        console.warn('Procurement creation failed due to schema mismatch. Error:', error?.message || error?.code);
+        if (isDocumentUrlError) {
+          throw new Error('Database schema mismatch: The documentUrl column is missing. Please run: npx prisma migrate deploy');
+        }
+        throw new Error('Database schema mismatch. The database is missing required columns. Please run: npx prisma migrate deploy');
+      }
+      
+      // Re-throw non-schema errors
+      throw error;
     }
-    // Re-throw non-schema errors
-    throw error;
   }
+  
+  // Should never reach here, but TypeScript needs it
+  throw new Error('Failed to create procurement after retries');
 }
 
 export async function updateProcurement(

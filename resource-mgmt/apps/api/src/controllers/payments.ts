@@ -46,6 +46,8 @@ export async function createPayment(req: Request, res: Response, next: NextFunct
     const paymentData: any = {
       expenseId: data.expenseId,
       amount: data.amount,
+      paymentCurrencyCode: data.paymentCurrencyCode || null,
+      amountLCY: data.amountLCY || null,
       paymentDate: data.paymentDate,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber || null,
@@ -83,6 +85,8 @@ export async function updatePayment(req: Request, res: Response, next: NextFunct
     const updateData: any = {};
     if (data.expenseId !== undefined) updateData.expenseId = data.expenseId;
     if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.paymentCurrencyCode !== undefined) updateData.paymentCurrencyCode = data.paymentCurrencyCode || null;
+    if (data.amountLCY !== undefined) updateData.amountLCY = data.amountLCY || null;
     if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.referenceNumber !== undefined) updateData.referenceNumber = data.referenceNumber || null;

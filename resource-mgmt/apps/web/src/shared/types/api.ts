@@ -188,6 +188,8 @@ export interface Payment {
   tenantId: string
   expenseId: string
   amount: string
+  paymentCurrencyCode: string | null
+  amountLCY: string | null
   paymentDate: string
   paymentMethod: PaymentMethod
   referenceNumber: string | null

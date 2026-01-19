@@ -91,6 +91,8 @@ export async function createPayment(
   data: {
     expenseId: string;
     amount: number | string;
+    paymentCurrencyCode?: string | null;
+    amountLCY?: number | string | null;
     paymentDate: Date | string;
     paymentMethod: PaymentMethod;
     referenceNumber?: string | null;
@@ -98,6 +100,7 @@ export async function createPayment(
   }
 ): Promise<PaymentWithRelations> {
   const amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+  const amountLCY = data.amountLCY ? (typeof data.amountLCY === 'string' ? parseFloat(data.amountLCY) : data.amountLCY) : null;
   const paymentDate = typeof data.paymentDate === 'string' ? new Date(data.paymentDate) : data.paymentDate;
 
   const payment = await prisma.payment.create({
@@ -105,6 +108,8 @@ export async function createPayment(
       tenantId,
       expenseId: data.expenseId,
       amount,
+      paymentCurrencyCode: data.paymentCurrencyCode || null,
+      amountLCY,
       paymentDate,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber || null,
@@ -135,6 +140,8 @@ export async function updatePayment(
   data: {
     expenseId?: string;
     amount?: number | string;
+    paymentCurrencyCode?: string | null;
+    amountLCY?: number | string | null;
     paymentDate?: Date | string;
     paymentMethod?: PaymentMethod;
     referenceNumber?: string | null;
@@ -148,6 +155,12 @@ export async function updatePayment(
   }
   if (data.amount !== undefined) {
     updateData.amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+  }
+  if (data.paymentCurrencyCode !== undefined) {
+    updateData.paymentCurrencyCode = data.paymentCurrencyCode || null;
+  }
+  if (data.amountLCY !== undefined) {
+    updateData.amountLCY = data.amountLCY ? (typeof data.amountLCY === 'string' ? parseFloat(data.amountLCY) : data.amountLCY) : null;
   }
   if (data.paymentDate !== undefined) {
     updateData.paymentDate = typeof data.paymentDate === 'string' ? new Date(data.paymentDate) : data.paymentDate;

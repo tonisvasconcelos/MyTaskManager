@@ -15,7 +15,7 @@ import type { Payment } from '../../shared/types/api'
 const paymentSchema = z.object({
   expenseId: z.string().uuid('Expense is required'),
   amount: z.union([z.string(), z.number()]).transform((val) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val
+    const num = typeof val === 'string' ? parseFloat(val) : val : val
     if (isNaN(num) || num <= 0) {
       throw new z.ZodError([
         {
@@ -27,6 +27,21 @@ const paymentSchema = z.object({
     }
     return num
   }),
+  paymentCurrencyCode: z.string().length(3, 'Currency code must be 3 characters').optional().nullable(),
+  amountLCY: z.union([z.string(), z.number()]).transform((val) => {
+    if (val === null || val === undefined || val === '') return null
+    const num = typeof val === 'string' ? parseFloat(val) : val
+    if (isNaN(num) || num <= 0) {
+      throw new z.ZodError([
+        {
+          code: 'custom',
+          path: ['amountLCY'],
+          message: 'LCY amount must be a positive number',
+        },
+      ])
+    }
+    return num
+  }).optional().nullable(),
   paymentDate: z.string().min(1, 'Payment date is required'),
   paymentMethod: z.enum(['CORPORATE_CREDIT_CARD', 'BANK_TRANSFER', 'PAYPAL', 'OTHER']),
   referenceNumber: z.string().optional().nullable(),
@@ -54,11 +69,14 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
       expenseId: '',
       amount: 0,
+      paymentCurrencyCode: null,
+      amountLCY: null,
       paymentDate: new Date().toISOString().split('T')[0],
       paymentMethod: 'CORPORATE_CREDIT_CARD',
       referenceNumber: null,
@@ -66,11 +84,16 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
     },
   })
 
+  const selectedExpenseId = watch('expenseId')
+  const selectedExpense = expenses.find((e) => e.id === selectedExpenseId)
+
   useEffect(() => {
     if (payment && isOpen) {
       reset({
         expenseId: payment.expenseId,
         amount: parseFloat(payment.amount),
+        paymentCurrencyCode: payment.paymentCurrencyCode || null,
+        amountLCY: payment.amountLCY ? parseFloat(payment.amountLCY) : null,
         paymentDate: new Date(payment.paymentDate).toISOString().split('T')[0],
         paymentMethod: payment.paymentMethod,
         referenceNumber: payment.referenceNumber || null,
@@ -80,6 +103,8 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
       reset({
         expenseId: '',
         amount: 0,
+        paymentCurrencyCode: null,
+        amountLCY: null,
         paymentDate: new Date().toISOString().split('T')[0],
         paymentMethod: 'CORPORATE_CREDIT_CARD',
         referenceNumber: null,
@@ -88,11 +113,23 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
     }
   }, [payment, isOpen, reset])
 
+  // Auto-populate currency code from expense when expense is selected
+  useEffect(() => {
+    if (selectedExpense?.invoiceCurrencyCode && !watch('paymentCurrencyCode')) {
+      reset({
+        ...watch(),
+        paymentCurrencyCode: selectedExpense.invoiceCurrencyCode,
+      }, { keepValues: true })
+    }
+  }, [selectedExpense, reset, watch])
+
   const onSubmit = async (data: PaymentFormData) => {
     try {
       const payload = {
         ...data,
         amount: typeof data.amount === 'number' ? data.amount.toString() : data.amount,
+        paymentCurrencyCode: data.paymentCurrencyCode || null,
+        amountLCY: data.amountLCY ? (typeof data.amountLCY === 'number' ? data.amountLCY.toString() : data.amountLCY) : null,
         referenceNumber: data.referenceNumber || null,
         notes: data.notes || null,
       }
@@ -135,6 +172,20 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
           />
         </div>
 
+        {selectedExpense && (
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1">
+              {t('payments.billToCompany')}
+            </label>
+            <Input
+              type="text"
+              value={selectedExpense.company?.name || 'Unknown'}
+              disabled
+              className="bg-gray-700 cursor-not-allowed"
+            />
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1">
             {t('payments.amount')} *
@@ -145,6 +196,32 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
             min="0.01"
             {...register('amount')}
             error={errors.amount?.message}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1">
+            {t('payments.paymentCurrencyCode')}
+          </label>
+          <Input
+            type="text"
+            maxLength={3}
+            placeholder="USD"
+            {...register('paymentCurrencyCode')}
+            error={errors.paymentCurrencyCode?.message}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1">
+            {t('payments.amountLCY')}
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0.01"
+            {...register('amountLCY')}
+            error={errors.amountLCY?.message}
           />
         </div>
 

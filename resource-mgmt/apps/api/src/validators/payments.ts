@@ -19,6 +19,25 @@ export const createPaymentSchema = z.object({
         }
         return num;
       }),
+    paymentCurrencyCode: z.string().length(3, 'Currency code must be 3 characters').optional().nullable(),
+    amountLCY: z
+      .union([z.string(), z.number()])
+      .transform((val) => {
+        if (val === null || val === undefined || val === '') return null;
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        if (isNaN(num) || num <= 0) {
+          throw new z.ZodError([
+            {
+              code: 'custom',
+              path: ['amountLCY'],
+              message: 'LCY amount must be a positive number',
+            },
+          ]);
+        }
+        return num;
+      })
+      .optional()
+      .nullable(),
     paymentDate: z.union([
       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       z.string().datetime(),
@@ -52,6 +71,25 @@ export const updatePaymentSchema = z.object({
         return num;
       })
       .optional(),
+    paymentCurrencyCode: z.string().length(3, 'Currency code must be 3 characters').optional().nullable(),
+    amountLCY: z
+      .union([z.string(), z.number()])
+      .transform((val) => {
+        if (val === null || val === undefined || val === '') return null;
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        if (isNaN(num) || num <= 0) {
+          throw new z.ZodError([
+            {
+              code: 'custom',
+              path: ['amountLCY'],
+              message: 'LCY amount must be a positive number',
+            },
+          ]);
+        }
+        return num;
+      })
+      .optional()
+      .nullable(),
     paymentDate: z
       .union([
         z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

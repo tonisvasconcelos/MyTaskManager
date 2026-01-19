@@ -35,7 +35,7 @@ export const updateSaleSchema = z.object({
     id: z.string().uuid(),
   }),
   body: z.object({
-    companyId: z.string().uuid('Invalid company ID').optional()),
+    companyId: z.string().uuid('Invalid company ID').optional(),
     invoiceNumber: z.string().min(1, 'Invoice number is required').optional(),
     date: z
       .union([

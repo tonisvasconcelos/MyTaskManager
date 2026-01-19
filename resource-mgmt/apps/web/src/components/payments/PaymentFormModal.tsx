@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCreatePayment, useUpdatePayment } from '../../shared/api/payments'
 import { useProcurements } from '../../shared/api/procurements'
@@ -125,14 +125,14 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
           <Select
             {...register('expenseId')}
             error={errors.expenseId?.message}
-          >
-            <option value="">{t('payments.selectExpense')}</option>
-            {expenses.map((expense) => (
-              <option key={expense.id} value={expense.id}>
-                {expense.invoiceNumber} - {expense.company?.name || 'Unknown'} (${parseFloat(expense.totalAmount).toFixed(2)})
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: t('payments.selectExpense') },
+              ...expenses.map((expense) => ({
+                value: expense.id,
+                label: `${expense.invoiceNumber} - ${expense.company?.name || 'Unknown'} ($${parseFloat(expense.totalAmount).toFixed(2)})`,
+              })),
+            ]}
+          />
         </div>
 
         <div>
@@ -166,12 +166,13 @@ export function PaymentFormModal({ isOpen, onClose, payment }: PaymentFormModalP
           <Select
             {...register('paymentMethod')}
             error={errors.paymentMethod?.message}
-          >
-            <option value="CORPORATE_CREDIT_CARD">{t('paymentMethod.CORPORATE_CREDIT_CARD')}</option>
-            <option value="BANK_TRANSFER">{t('paymentMethod.BANK_TRANSFER')}</option>
-            <option value="PAYPAL">{t('paymentMethod.PAYPAL')}</option>
-            <option value="OTHER">{t('paymentMethod.OTHER')}</option>
-          </Select>
+            options={[
+              { value: 'CORPORATE_CREDIT_CARD', label: t('paymentMethod.CORPORATE_CREDIT_CARD') },
+              { value: 'BANK_TRANSFER', label: t('paymentMethod.BANK_TRANSFER') },
+              { value: 'PAYPAL', label: t('paymentMethod.PAYPAL') },
+              { value: 'OTHER', label: t('paymentMethod.OTHER') },
+            ]}
+          />
         </div>
 
         <div>

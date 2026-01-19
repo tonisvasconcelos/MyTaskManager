@@ -33,14 +33,14 @@ export function ProjectFinancialEntriesPage() {
         <Select
           value={selectedProjectId}
           onChange={(e) => setSelectedProjectId(e.target.value)}
-        >
-          <option value="">{t('finance.allProjects')}</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </Select>
+          options={[
+            { value: '', label: t('finance.allProjects') },
+            ...projects.map((project) => ({
+              value: project.id,
+              label: project.name,
+            })),
+          ]}
+        />
       </div>
 
       {summary.length > 0 && (

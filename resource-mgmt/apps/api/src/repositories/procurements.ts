@@ -189,75 +189,75 @@ export async function createProcurement(
   try {
     return await prisma.$transaction(async (tx) => {
       const total = typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount;
-    
-    // Create expense
-    const expense = await tx.expense.create({
-      data: {
-        tenantId,
-        companyId: data.companyId,
-        invoiceNumber: data.invoiceNumber,
-        date: typeof data.date === 'string' ? new Date(data.date) : data.date,
-        dueDate: data.dueDate ? (typeof data.dueDate === 'string' ? new Date(data.dueDate) : data.dueDate) : null,
-        refStartDate: data.refStartDate ? (typeof data.refStartDate === 'string' ? new Date(data.refStartDate) : data.refStartDate) : null,
-        refEndDate: data.refEndDate ? (typeof data.refEndDate === 'string' ? new Date(data.refEndDate) : data.refEndDate) : null,
-        invoiceCurrencyCode: data.invoiceCurrencyCode || null,
-        totalAmount: total,
-        paymentMethod: data.paymentMethod,
-        status: data.status || 'PENDING',
-        notes: data.notes || null,
-        documentUrl: data.documentUrl || null,
-      },
-    });
-
-    // Create allocations - calculate amount from percentage if needed
-    await tx.expenseAllocation.createMany({
-      data: data.allocations.map((alloc) => {
-        let allocatedAmount: number | null = null;
-        let allocatedPercentage: number | null = null;
-        
-        if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
-          allocatedAmount = typeof alloc.allocatedAmount === 'string'
-            ? parseFloat(alloc.allocatedAmount)
-            : alloc.allocatedAmount;
-        } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
-          allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
-            ? parseFloat(alloc.allocatedPercentage)
-            : alloc.allocatedPercentage;
-          // Calculate amount from percentage
-          allocatedAmount = (total * allocatedPercentage) / 100;
-        }
-        
-        return {
-          expenseId: expense.id,
-          projectId: alloc.projectId,
-          allocatedAmount,
-          allocatedPercentage,
-        };
-      }),
-    });
-
-    // Fetch with relations
-    const expenseWithRelations = await tx.expense.findUnique({
-      where: { id: expense.id },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-          },
+      
+      // Create expense
+      const expense = await tx.expense.create({
+        data: {
+          tenantId,
+          companyId: data.companyId,
+          invoiceNumber: data.invoiceNumber,
+          date: typeof data.date === 'string' ? new Date(data.date) : data.date,
+          dueDate: data.dueDate ? (typeof data.dueDate === 'string' ? new Date(data.dueDate) : data.dueDate) : null,
+          refStartDate: data.refStartDate ? (typeof data.refStartDate === 'string' ? new Date(data.refStartDate) : data.refStartDate) : null,
+          refEndDate: data.refEndDate ? (typeof data.refEndDate === 'string' ? new Date(data.refEndDate) : data.refEndDate) : null,
+          invoiceCurrencyCode: data.invoiceCurrencyCode || null,
+          totalAmount: total,
+          paymentMethod: data.paymentMethod,
+          status: data.status || 'PENDING',
+          notes: data.notes || null,
+          documentUrl: data.documentUrl || null,
         },
-        allocations: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
+      });
+
+      // Create allocations - calculate amount from percentage if needed
+      await tx.expenseAllocation.createMany({
+        data: data.allocations.map((alloc) => {
+          let allocatedAmount: number | null = null;
+          let allocatedPercentage: number | null = null;
+          
+          if (alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null) {
+            allocatedAmount = typeof alloc.allocatedAmount === 'string'
+              ? parseFloat(alloc.allocatedAmount)
+              : alloc.allocatedAmount;
+          } else if (alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null) {
+            allocatedPercentage = typeof alloc.allocatedPercentage === 'string'
+              ? parseFloat(alloc.allocatedPercentage)
+              : alloc.allocatedPercentage;
+            // Calculate amount from percentage
+            allocatedAmount = (total * allocatedPercentage) / 100;
+          }
+          
+          return {
+            expenseId: expense.id,
+            projectId: alloc.projectId,
+            allocatedAmount,
+            allocatedPercentage,
+          };
+        }),
+      });
+
+      // Fetch with relations
+      const expenseWithRelations = await tx.expense.findUnique({
+        where: { id: expense.id },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          allocations: {
+            include: {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
       return expenseWithRelations as ExpenseWithRelations;
     });

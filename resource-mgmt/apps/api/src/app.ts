@@ -47,13 +47,16 @@ export function createApp(): Express {
         }
 
         // Allow GitHub Pages origins in general (optional convenience for MVP)
-        if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(origin)) {
+        // Match patterns like: https://username.github.io or https://username.github.io/MyTaskManager
+        if (/^https:\/\/[a-z0-9-]+\.github\.io(\/.*)?$/i.test(origin)) {
           return callback(null, true);
         }
 
         return callback(new Error(`CORS blocked for origin: ${origin}`));
       },
       credentials: false,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     })
   );
 

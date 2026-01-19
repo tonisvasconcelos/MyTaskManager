@@ -463,6 +463,12 @@ export async function updatePayment(
   }
 
   try {
+    // Get the old payment to find the previous expenseId before update
+    const oldPayment = await prisma.payment.findUnique({
+      where: { id },
+      select: { expenseId: true },
+    });
+
     const payment = await prisma.payment.update({
       where: { id },
       data: updateData,
@@ -484,28 +490,14 @@ export async function updatePayment(
 
     // Update expense status based on total payments
     // If expenseId changed, update both old and new expense statuses
-    if (data.expenseId !== undefined) {
-      // Get the old payment to find the previous expenseId
-      const oldPayment = await prisma.payment.findUnique({
-        where: { id },
-        select: { expenseId: true },
-      });
-      
-      if (oldPayment && oldPayment.expenseId !== data.expenseId) {
-        // Update old expense status
-        await updateExpenseStatus(oldPayment.expenseId);
-      }
+    if (oldPayment && data.expenseId !== undefined && oldPayment.expenseId !== data.expenseId) {
+      // Update old expense status
+      await updateExpenseStatus(oldPayment.expenseId);
     }
     
-    // Update current expense status
-    const updatedPayment = await prisma.payment.findUnique({
-      where: { id },
-      select: { expenseId: true },
-    });
-    
-    if (updatedPayment) {
-      await updateExpenseStatus(updatedPayment.expenseId);
-    }
+    // Update current expense status (use new expenseId if changed, otherwise use payment's expenseId)
+    const currentExpenseId = data.expenseId !== undefined ? data.expenseId : payment.expenseId;
+    await updateExpenseStatus(currentExpenseId);
 
     return payment as PaymentWithRelations;
   } catch (error: any) {

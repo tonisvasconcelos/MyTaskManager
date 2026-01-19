@@ -15,7 +15,7 @@ import type { Payment } from '../../shared/types/api'
 const paymentSchema = z.object({
   expenseId: z.string().uuid('Expense is required'),
   amount: z.union([z.string(), z.number()]).transform((val) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val : val
+    const num = typeof val === 'string' ? parseFloat(val) : val
     if (isNaN(num) || num <= 0) {
       throw new z.ZodError([
         {

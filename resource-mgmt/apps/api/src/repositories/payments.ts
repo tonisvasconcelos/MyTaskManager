@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
 import type { Payment, Prisma, PaymentMethod } from '@prisma/client';
+import { Prisma as PrismaNamespace } from '@prisma/client';
 
 export interface PaymentWithRelations extends Payment {
   expense: {
@@ -11,6 +12,47 @@ export interface PaymentWithRelations extends Payment {
       name: string;
     };
   };
+}
+
+// Helper function to check if an error is a schema-related Prisma error
+function isSchemaError(error: any): boolean {
+  // Check if it's a Prisma error instance
+  const isPrismaError = error instanceof PrismaNamespace.PrismaClientKnownRequestError ||
+                       error instanceof PrismaNamespace.PrismaClientValidationError ||
+                       error instanceof PrismaNamespace.PrismaClientRustPanicError ||
+                       error instanceof PrismaNamespace.PrismaClientInitializationError ||
+                       (error?.constructor?.name?.includes('Prisma'));
+  
+  if (!isPrismaError) {
+    return false;
+  }
+  
+  // Check for specific Prisma error codes that indicate schema issues
+  if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const schemaErrorCodes = ['P2001', 'P2021', 'P2022', 'P2010', 'P2011'];
+    if (schemaErrorCodes.includes(error.code)) {
+      return true;
+    }
+  }
+  
+  // Check error message for schema-related keywords
+  const errorMessage = (error?.message || '').toLowerCase();
+  const schemaKeywords = [
+    'does not exist',
+    'unknown column',
+    'relation',
+    'table',
+    'column',
+    'schema',
+    'migration',
+    'billable',
+    'language'
+  ];
+  
+  // Check if message contains schema-related keywords
+  const hasSchemaKeywords = schemaKeywords.some(keyword => errorMessage.includes(keyword));
+  
+  return hasSchemaKeywords;
 }
 
 export async function findPayments(
@@ -34,11 +76,57 @@ export async function findPayments(
     }),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.payment.findMany({
-      where,
-      skip,
-      take,
+  let data: PaymentWithRelations[] = [];
+  let total = 0;
+
+  try {
+    // Try to fetch payments with company relation
+    const [payments, count] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          expense: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { paymentDate: 'desc' },
+      }),
+      prisma.payment.count({ where }),
+    ]);
+    data = payments as PaymentWithRelations[];
+    total = count;
+  } catch (error: any) {
+    console.error('Error fetching payments:', error);
+    if (isSchemaError(error)) {
+      console.warn('Payments query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
+      // Return empty result instead of throwing
+      return { data: [], total: 0, page, pageSize };
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
+
+  return { data, total, page, pageSize };
+}
+
+export async function findPaymentByIdForTenant(
+  tenantId: string,
+  id: string
+): Promise<PaymentWithRelations | null> {
+  try {
+    const payment = await prisma.payment.findFirst({
+      where: { id, tenantId },
       include: {
         expense: {
           select: {
@@ -53,37 +141,18 @@ export async function findPayments(
           },
         },
       },
-      orderBy: { paymentDate: 'desc' },
-    }),
-    prisma.payment.count({ where }),
-  ]);
+    });
 
-  return { data: data as PaymentWithRelations[], total, page, pageSize };
-}
-
-export async function findPaymentByIdForTenant(
-  tenantId: string,
-  id: string
-): Promise<PaymentWithRelations | null> {
-  const payment = await prisma.payment.findFirst({
-    where: { id, tenantId },
-    include: {
-      expense: {
-        select: {
-          id: true,
-          invoiceNumber: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return payment as PaymentWithRelations | null;
+    return payment as PaymentWithRelations | null;
+  } catch (error: any) {
+    console.error('Error fetching payment by ID:', error);
+    if (isSchemaError(error)) {
+      console.warn('Payment query failed due to schema mismatch. Returning null. Error:', error?.message || error?.code);
+      return null;
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }
 
 export async function createPayment(
@@ -103,35 +172,46 @@ export async function createPayment(
   const amountLCY = data.amountLCY ? (typeof data.amountLCY === 'string' ? parseFloat(data.amountLCY) : data.amountLCY) : null;
   const paymentDate = typeof data.paymentDate === 'string' ? new Date(data.paymentDate) : data.paymentDate;
 
-  const payment = await prisma.payment.create({
-    data: {
-      tenantId,
-      expenseId: data.expenseId,
-      amount,
-      paymentCurrencyCode: data.paymentCurrencyCode || null,
-      amountLCY,
-      paymentDate,
-      paymentMethod: data.paymentMethod,
-      referenceNumber: data.referenceNumber || null,
-      notes: data.notes || null,
-    },
-    include: {
-      expense: {
-        select: {
-          id: true,
-          invoiceNumber: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
+  try {
+    const payment = await prisma.payment.create({
+      data: {
+        tenantId,
+        expenseId: data.expenseId,
+        amount,
+        paymentCurrencyCode: data.paymentCurrencyCode || null,
+        amountLCY,
+        paymentDate,
+        paymentMethod: data.paymentMethod,
+        referenceNumber: data.referenceNumber || null,
+        notes: data.notes || null,
+      },
+      include: {
+        expense: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  return payment as PaymentWithRelations;
+    return payment as PaymentWithRelations;
+  } catch (error: any) {
+    console.error('Error creating payment:', error);
+    if (isSchemaError(error)) {
+      console.warn('Payment creation failed due to schema mismatch. Error:', error?.message || error?.code);
+      // For create operations, we should still throw the error as it's critical
+      throw new Error('Payment creation failed due to database schema mismatch. Please contact support.');
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }
 
 export async function updatePayment(
@@ -175,26 +255,36 @@ export async function updatePayment(
     updateData.notes = data.notes || null;
   }
 
-  const payment = await prisma.payment.update({
-    where: { id },
-    data: updateData,
-    include: {
-      expense: {
-        select: {
-          id: true,
-          invoiceNumber: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
+  try {
+    const payment = await prisma.payment.update({
+      where: { id },
+      data: updateData,
+      include: {
+        expense: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  return payment as PaymentWithRelations;
+    return payment as PaymentWithRelations;
+  } catch (error: any) {
+    console.error('Error updating payment:', error);
+    if (isSchemaError(error)) {
+      console.warn('Payment update failed due to schema mismatch. Error:', error?.message || error?.code);
+      throw new Error('Payment update failed due to database schema mismatch. Please contact support.');
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }
 
 export async function deletePayment(tenantId: string, id: string): Promise<void> {

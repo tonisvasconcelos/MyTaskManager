@@ -68,6 +68,7 @@ const companySchema = z.object({
 type CompanyFormData = z.infer<typeof companySchema>
 
 export function CompaniesPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [isModalOpen, setIsModalOpen] = useState(false)

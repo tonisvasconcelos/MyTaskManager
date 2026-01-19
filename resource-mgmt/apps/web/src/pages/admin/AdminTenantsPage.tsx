@@ -42,6 +42,7 @@ const tenantSchema = z.object({
 type TenantForm = z.infer<typeof tenantSchema>
 
 export function AdminTenantsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -196,30 +197,30 @@ export function AdminTenantsPage() {
         ) : data && data.data.length > 0 ? (
           <>
             <div className="space-y-3">
-              {data.data.map((t) => (
-                <Card key={t.id}>
+              {data.data.map((tenant) => (
+                <Card key={tenant.id}>
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                        <h3 className="text-lg font-semibold text-text-primary break-words">{t.slug}</h3>
-                        <Badge variant={t.isActive ? 'success' : 'danger'}>
-                          {t.isActive ? t('admin.tenants.active') : t('common.noData')}
+                        <h3 className="text-lg font-semibold text-text-primary break-words">{tenant.slug}</h3>
+                        <Badge variant={tenant.isActive ? 'success' : 'danger'}>
+                          {tenant.isActive ? t('admin.tenants.active') : 'Inactive'}
                         </Badge>
-                        {t.activeUntil && (
+                        {tenant.activeUntil && (
                           <Badge variant="warning">
-                            {t('admin.tenants.activeUntil')} {new Date(t.activeUntil).toLocaleDateString()}
+                            {t('admin.tenants.activeUntil')} {new Date(tenant.activeUntil).toLocaleDateString()}
                           </Badge>
                         )}
                       </div>
                       <p className="text-sm text-text-secondary mt-1 break-words">
-                        {t.name || '—'} · {t.planName} · {t('admin.tenants.maxUsers')} {t.maxUsers}
+                        {tenant.name || '—'} · {tenant.planName} · {t('admin.tenants.maxUsers')} {tenant.maxUsers}
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Link to={`/admin/tenants/${t.id}`} className="btn-secondary text-center">
+                      <Link to={`/admin/tenants/${tenant.id}`} className="btn-secondary text-center">
                         {t('admin.tenants.manageUsers')}
                       </Link>
-                      <Button variant="secondary" size="sm" onClick={() => openEdit(t)}>
+                      <Button variant="secondary" size="sm" onClick={() => openEdit(tenant)}>
                         {t('admin.tenants.editLicense')}
                       </Button>
                     </div>

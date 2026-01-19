@@ -1,4 +1,4 @@
-import { PrismaClient, ProjectStatus, TaskStatus, TaskPriority, UserRole } from '@prisma/client';
+import { PrismaClient, ProjectStatus, TaskStatus, TaskPriority, UserRole, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 const prisma = new PrismaClient();
@@ -14,6 +14,10 @@ async function main() {
   });
 
   // Make seed idempotent: wipe demo tenant data then recreate
+  await prisma.expenseAllocation.deleteMany({
+    where: { expense: { tenantId: demoTenant.id } },
+  });
+  await prisma.expense.deleteMany({ where: { tenantId: demoTenant.id } });
   await prisma.timeEntry.deleteMany({ where: { tenantId: demoTenant.id } });
   await prisma.taskAttachment.deleteMany({
     where: { task: { tenantId: demoTenant.id } },
@@ -262,6 +266,157 @@ async function main() {
   }
 
   console.log(`✅ Created ${timeEntries.length} time entries`);
+
+  // Create Expenses (IT Procurement)
+  // First, create some vendor companies (separate from client companies)
+  const vendorCompanies = await Promise.all([
+    prisma.company.create({
+      data: {
+        tenantId: demoTenant.id,
+        name: 'Amazon Web Services',
+        email: 'billing@aws.amazon.com',
+        phone: '+1-206-266-1000',
+        website: 'https://aws.amazon.com',
+        address: '410 Terry Avenue North, Seattle, WA 98109',
+        notes: 'Cloud infrastructure provider',
+      },
+    }),
+    prisma.company.create({
+      data: {
+        tenantId: demoTenant.id,
+        name: 'Microsoft Azure',
+        email: 'support@azure.microsoft.com',
+        phone: '+1-425-882-8080',
+        website: 'https://azure.microsoft.com',
+        address: 'One Microsoft Way, Redmond, WA 98052',
+        notes: 'Cloud platform provider',
+      },
+    }),
+    prisma.company.create({
+      data: {
+        tenantId: demoTenant.id,
+        name: 'GitHub Inc',
+        email: 'support@github.com',
+        phone: '+1-415-735-4488',
+        website: 'https://github.com',
+        address: '88 Colin P Kelly Jr St, San Francisco, CA 94107',
+        notes: 'Code repository and CI/CD platform',
+      },
+    }),
+    prisma.company.create({
+      data: {
+        tenantId: demoTenant.id,
+        name: 'Atlassian',
+        email: 'support@atlassian.com',
+        phone: '+1-415-701-1320',
+        website: 'https://atlassian.com',
+        address: '350 Bush Street, San Francisco, CA 94104',
+        notes: 'Project management and collaboration tools',
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${vendorCompanies.length} vendor companies`);
+
+  // Create expenses with allocations
+  const expenseData = [
+    {
+      company: vendorCompanies[0], // AWS
+      invoiceNumber: 'AWS-2024-001',
+      date: new Date('2024-01-15'),
+      totalAmount: 2500.00,
+      paymentMethod: PaymentMethod.CORPORATE_CREDIT_CARD,
+      status: PaymentStatus.PAID,
+      notes: 'Monthly AWS infrastructure costs',
+      allocations: [
+        { project: projects[0], amount: 1000.00 }, // E-commerce Platform
+        { project: projects[2], amount: 1500.00 }, // Cloud Migration
+      ],
+    },
+    {
+      company: vendorCompanies[1], // Azure
+      invoiceNumber: 'AZR-2024-002',
+      date: new Date('2024-02-01'),
+      totalAmount: 1800.50,
+      paymentMethod: PaymentMethod.BANK_TRANSFER,
+      status: PaymentStatus.PAID,
+      notes: 'Azure services for Q1 2024',
+      allocations: [
+        { project: projects[2], amount: 1200.00 }, // Cloud Migration
+        { project: projects[4], amount: 600.50 },  // Legacy System Modernization
+      ],
+    },
+    {
+      company: vendorCompanies[2], // GitHub
+      invoiceNumber: 'GH-2024-003',
+      date: new Date('2024-02-10'),
+      totalAmount: 450.00,
+      paymentMethod: PaymentMethod.CORPORATE_CREDIT_CARD,
+      status: PaymentStatus.PAID,
+      notes: 'GitHub Enterprise subscription',
+      allocations: [
+        { project: projects[0], amount: 150.00 }, // E-commerce Platform
+        { project: projects[1], amount: 150.00 }, // Mobile App Development
+        { project: projects[2], amount: 150.00 }, // Cloud Migration
+      ],
+    },
+    {
+      company: vendorCompanies[3], // Atlassian
+      invoiceNumber: 'ATL-2024-004',
+      date: new Date('2024-02-20'),
+      totalAmount: 1200.00,
+      paymentMethod: PaymentMethod.CORPORATE_CREDIT_CARD,
+      status: PaymentStatus.PENDING,
+      notes: 'Jira and Confluence licenses',
+      allocations: [
+        { project: projects[0], amount: 400.00 }, // E-commerce Platform
+        { project: projects[1], amount: 400.00 }, // Mobile App Development
+        { project: projects[6], amount: 400.00 }, // Customer Portal Development
+      ],
+    },
+    {
+      company: vendorCompanies[0], // AWS
+      invoiceNumber: 'AWS-2024-005',
+      date: new Date('2024-03-01'),
+      totalAmount: 3200.75,
+      paymentMethod: PaymentMethod.CORPORATE_CREDIT_CARD,
+      status: PaymentStatus.PARTIALLY_PAID,
+      notes: 'AWS services for February 2024',
+      allocations: [
+        { project: projects[0], amount: 1500.00 }, // E-commerce Platform
+        { project: projects[2], amount: 1000.00 }, // Cloud Migration
+        { project: projects[4], amount: 700.75 },  // Legacy System Modernization
+      ],
+    },
+  ];
+
+  for (const expenseInfo of expenseData) {
+    const expense = await prisma.expense.create({
+      data: {
+        tenantId: demoTenant.id,
+        companyId: expenseInfo.company.id,
+        invoiceNumber: expenseInfo.invoiceNumber,
+        date: expenseInfo.date,
+        totalAmount: expenseInfo.totalAmount,
+        paymentMethod: expenseInfo.paymentMethod,
+        status: expenseInfo.status,
+        notes: expenseInfo.notes,
+      },
+    });
+
+    // Create allocations
+    for (const allocation of expenseInfo.allocations) {
+      await prisma.expenseAllocation.create({
+        data: {
+          expenseId: expense.id,
+          projectId: allocation.project.id,
+          allocatedAmount: allocation.amount,
+        },
+      });
+    }
+  }
+
+  console.log(`✅ Created ${expenseData.length} expenses with allocations`);
 
   console.log('✨ Seeding completed!');
 }

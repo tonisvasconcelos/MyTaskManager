@@ -143,3 +143,37 @@ export interface TimesheetSummary {
   totalsPerProject: Record<string, number>
   totalsPerTask: Record<string, number>
 }
+
+export type PaymentMethod = 'CORPORATE_CREDIT_CARD' | 'BANK_TRANSFER' | 'PAYPAL' | 'OTHER'
+
+export type PaymentStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID'
+
+export interface ExpenseAllocation {
+  id: string
+  expenseId: string
+  projectId: string
+  allocatedAmount: string
+  project?: {
+    id: string
+    name: string
+  }
+}
+
+export interface Expense {
+  id: string
+  tenantId: string
+  companyId: string
+  invoiceNumber: string
+  date: string
+  totalAmount: string
+  paymentMethod: PaymentMethod
+  status: PaymentStatus
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  company?: {
+    id: string
+    name: string
+  }
+  allocations?: ExpenseAllocation[]
+}

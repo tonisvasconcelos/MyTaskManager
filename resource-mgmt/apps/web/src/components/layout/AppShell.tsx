@@ -27,6 +27,7 @@ export function AppShell({ children }: AppShellProps) {
     { path: '/projects', label: t('common.projects'), icon: '📁' },
     { path: '/tasks/ongoing', label: t('common.ongoingTasks'), icon: '⚡' },
     { path: '/timesheet', label: t('common.timesheet'), icon: '⏱️' },
+    { path: '/procurements', label: t('common.procurements'), icon: '💰' },
   ]
 
   // Close mobile menu when route changes

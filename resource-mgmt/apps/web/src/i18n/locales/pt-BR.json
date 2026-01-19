@@ -5,6 +5,7 @@
     "projects": "Projetos",
     "ongoingTasks": "Tarefas em Andamento",
     "timesheet": "Registro de Horas",
+    "procurements": "Compras de TI",
     "signIn": "Entrar",
     "signOut": "Sair",
     "adminPortal": "Portal do administrador",
@@ -98,12 +99,15 @@
     "backToProjects": "← Voltar para Projetos",
     "tasks": "Tarefas",
     "timesheetSummary": "Resumo de Registro de Horas",
+    "expenses": "Despesas",
     "createTask": "Criar Tarefa",
     "backlog": "Backlog",
     "inProgress": "Em Progresso",
     "blocked": "Bloqueado",
     "done": "Concluído",
     "noTasks": "Sem tarefas",
+    "noExpenses": "Nenhuma despesa alocada para este projeto",
+    "totalAllocated": "Total Alocado",
     "comingSoon": "Resumo de registro de horas em breve..."
   },
   "tasks": {
@@ -220,5 +224,42 @@
     "admin": "Admin",
     "manager": "Gerente",
     "contributor": "Colaborador"
+  },
+  "procurements": {
+    "title": "Compras de TI",
+    "createExpense": "Criar Despesa",
+    "editExpense": "Editar Despesa",
+    "searchPlaceholder": "Buscar por número de nota fiscal ou fornecedor...",
+    "invoiceNumber": "Número da Nota Fiscal",
+    "vendor": "Fornecedor (Empresa)",
+    "date": "Data",
+    "totalAmount": "Valor Total",
+    "allocatedToProjects": "Alocado para Projetos",
+    "paymentMethod": "Método de Pagamento",
+    "paymentStatus": "Status do Pagamento",
+    "notes": "Notas",
+    "deleteConfirm": "Tem certeza que deseja excluir esta despesa?",
+    "noExpenses": "Nenhuma despesa encontrada",
+    "addNewCompany": "Adicionar Nova Empresa",
+    "allocateToProjects": "Alocar para Projetos",
+    "project": "Projeto",
+    "allocatedAmount": "Valor Alocado",
+    "addAllocation": "Adicionar Alocação",
+    "removeAllocation": "Remover",
+    "allocationSumError": "A soma das alocações deve ser igual ao valor total",
+    "duplicateProjectError": "Cada projeto só pode ser alocado uma vez",
+    "totalAllocated": "Total Alocado",
+    "remaining": "Restante"
+  },
+  "paymentMethod": {
+    "CORPORATE_CREDIT_CARD": "Cartão de Crédito Corporativo",
+    "BANK_TRANSFER": "Transferência Bancária",
+    "PAYPAL": "PayPal",
+    "OTHER": "Outro"
+  },
+  "paymentStatus": {
+    "PENDING": "Pendente",
+    "PARTIALLY_PAID": "Parcialmente Pago",
+    "PAID": "Pago"
   }
 }

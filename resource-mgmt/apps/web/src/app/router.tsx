@@ -7,6 +7,7 @@ import { ProjectsPage } from '../pages/ProjectsPage'
 import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { OngoingTasksPage } from '../pages/OngoingTasksPage'
 import { TimesheetPage } from '../pages/TimesheetPage'
+import { ProcurementsPage } from '../pages/ProcurementsPage'
 import { LoginPage } from '../pages/LoginPage'
 import { isLoggedIn } from '../shared/api/client'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
@@ -81,6 +82,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <TimesheetPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/procurements"
+        element={
+          <ProtectedRoute>
+            <ProcurementsPage />
           </ProtectedRoute>
         }
       />

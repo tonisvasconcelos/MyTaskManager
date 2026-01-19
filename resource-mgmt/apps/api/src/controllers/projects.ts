@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as projectRepo from '../repositories/projects.js';
+import * as procurementRepo from '../repositories/procurements.js';
 import { NotFoundError, ConflictError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
 
@@ -123,6 +124,24 @@ export async function deleteProject(req: Request, res: Response, next: NextFunct
     
     await projectRepo.deleteProject(id);
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getProjectExpenses(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const tenantId = req.tenantId!;
+    
+    // Verify project exists and belongs to tenant
+    const project = await projectRepo.findProjectByIdForTenant(tenantId, id);
+    if (!project) {
+      throw new NotFoundError('Project', id);
+    }
+    
+    const expenses = await procurementRepo.findExpensesByProject(tenantId, id);
+    res.json(expenses);
   } catch (error) {
     next(error);
   }

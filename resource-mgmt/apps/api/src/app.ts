@@ -8,6 +8,7 @@ import { usersRouter } from './routes/users.js';
 import { tasksRouter } from './routes/tasks.js';
 import { attachmentsRouter } from './routes/attachments.js';
 import { timesheetRouter } from './routes/timesheet.js';
+import { procurementsRouter } from './routes/procurements.js';
 import { authRouter } from './routes/auth.js';
 import { requireTenantAuth } from './middlewares/requireAuth.js';
 import { adminRouter } from './routes/admin.js';
@@ -79,6 +80,7 @@ export function createApp(): Express {
   app.use('/api/tasks', tasksRouter);
   app.use('/api', attachmentsRouter);
   app.use('/api', timesheetRouter);
+  app.use('/api/procurements', procurementsRouter);
 
   // Error handler (must be last)
   app.use(errorHandler);

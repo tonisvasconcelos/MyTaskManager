@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../shared/api/tasks'
 import { useProject } from '../shared/api/projects'
 import { useUsers } from '../shared/api/users'
+import { useProcurements } from '../shared/api/procurements'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -16,7 +17,7 @@ import { TaskDetailModal } from '../components/tasks/TaskDetailModal'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import type { Task } from '../shared/types/api'
+import type { Task, Expense } from '../shared/types/api'
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -59,9 +60,12 @@ export function ProjectDetailPage() {
   const { data: project, isLoading: projectLoading } = useProject(id || '')
   const { data: tasksData, isLoading: tasksLoading } = useTasks({ projectId: id, page: 1, pageSize: 1000 })
   const { data: users } = useUsers()
+  const expensesQuery = useProcurements({ projectId: id || '' })
+  const expensesData = expensesQuery.data
+  const expensesLoading = expensesQuery.isLoading
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet'>('tasks')
+  const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet' | 'expenses'>('tasks')
   
   const statusColumns = getStatusColumns(t)
 
@@ -194,6 +198,16 @@ export function ProjectDetailPage() {
           >
             {t('projectDetail.timesheetSummary')}
           </button>
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`px-3 md:px-4 py-2 font-medium transition-colors text-sm md:text-base flex-1 md:flex-initial ${
+              activeTab === 'expenses'
+                ? 'text-accent border-b-2 border-accent'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {t('projectDetail.expenses')}
+          </button>
         </div>
       </div>
 
@@ -282,6 +296,85 @@ export function ProjectDetailPage() {
         <Card>
           <p className="text-text-secondary">{t('projectDetail.comingSoon')}</p>
         </Card>
+      )}
+
+      {activeTab === 'expenses' && (
+        <div>
+          {expensesLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+            </div>
+          ) : expensesData && Array.isArray(expensesData) && expensesData.length > 0 ? (
+            <>
+              <div className="mb-4 p-4 bg-surface border border-border rounded-md">
+                <div className="flex justify-between items-center">
+                  <span className="text-text-secondary">{t('projectDetail.totalAllocated')}:</span>
+                  <span className="text-text-primary font-semibold text-lg">
+                    $
+                    {expensesData
+                      .reduce((sum, expense) => {
+                        const allocation = expense.allocations?.find((a) => a.projectId === id)
+                        return sum + (allocation ? parseFloat(allocation.allocatedAmount) : 0)
+                      }, 0)
+                      .toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {expensesData.map((expense) => {
+                  const allocation = expense.allocations?.find((a) => a.projectId === id)
+                  if (!allocation) return null
+                  return (
+                    <Card key={expense.id}>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-text-primary mb-2 break-words">
+                            {expense.invoiceNumber}
+                          </h3>
+                          <p className="text-sm text-text-secondary mb-2">
+                            {expense.company?.name || 'Unknown Vendor'}
+                          </p>
+                          <div className="flex flex-wrap gap-2 md:gap-4 text-sm text-text-secondary">
+                            <span>
+                              {t('procurements.date')}: {new Date(expense.date).toLocaleDateString()}
+                            </span>
+                            <span>
+                              {t('procurements.allocatedAmount')}: ${parseFloat(allocation.allocatedAmount).toFixed(2)}
+                            </span>
+                            <span>
+                              {t('procurements.totalAmount')}: ${parseFloat(expense.totalAmount).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge
+                              variant={
+                                expense.status === 'PAID'
+                                  ? 'success'
+                                  : expense.status === 'PENDING'
+                                    ? 'warning'
+                                    : 'default'
+                              }
+                            >
+                              {t(`paymentStatus.${expense.status}`)}
+                            </Badge>
+                            <Badge variant="default">
+                              {t(`paymentMethod.${expense.paymentMethod}`)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <Card>
+              <p className="text-text-secondary text-center py-8">{t('projectDetail.noExpenses')}</p>
+            </Card>
+          )}
+        </div>
       )}
 
       <Modal

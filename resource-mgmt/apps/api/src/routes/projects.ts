@@ -11,6 +11,7 @@ import {
 export const projectsRouter = Router();
 
 projectsRouter.get('/', projectsController.getProjects);
+projectsRouter.get('/:id/expenses', validateRequest(getProjectSchema), projectsController.getProjectExpenses);
 projectsRouter.get('/:id', validateRequest(getProjectSchema), projectsController.getProject);
 projectsRouter.post('/', validateRequest(createProjectSchema), projectsController.createProject);
 projectsRouter.put('/:id', validateRequest(updateProjectSchema), projectsController.updateProject);

@@ -26,6 +26,7 @@ model Tenant {
   users     User[]
   tasks     Task[]
   timeEntries TimeEntry[]
+  expenses  Expense[]
 
   @@index([slug])
 }
@@ -68,6 +69,19 @@ enum BillingUnit {
   PROJECT
 }
 
+enum PaymentMethod {
+  CORPORATE_CREDIT_CARD
+  BANK_TRANSFER
+  PAYPAL
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+}
+
 model Company {
   id        String   @id @default(uuid())
   tenantId  String
@@ -94,6 +108,7 @@ model Company {
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   projects Project[]
+  expenses Expense[]
 
   @@index([tenantId])
   @@index([tenantId, name])
@@ -114,6 +129,7 @@ model Project {
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   tasks   Task[]
+  expenseAllocations ExpenseAllocation[]
 
   @@index([tenantId])
   @@index([tenantId, companyId])
@@ -208,4 +224,40 @@ model TimeEntry {
   @@index([tenantId])
   @@index([tenantId, userId, entryDate])
   @@index([tenantId, taskId])
+}
+
+model Expense {
+  id            String         @id @default(uuid())
+  tenantId      String
+  companyId     String
+  invoiceNumber String
+  date          DateTime
+  totalAmount   Decimal        @db.Decimal(10,2)
+  paymentMethod PaymentMethod
+  status        PaymentStatus  @default(PENDING)
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allocations   ExpenseAllocation[]
+
+  @@index([tenantId])
+  @@index([tenantId, invoiceNumber])
+  @@unique([tenantId, companyId, invoiceNumber])
+}
+
+model ExpenseAllocation {
+  id        String   @id @default(uuid())
+  expenseId String
+  projectId String
+  allocatedAmount Decimal @db.Decimal(10,2)
+
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@index([projectId])
+  @@unique([expenseId, projectId])
 }

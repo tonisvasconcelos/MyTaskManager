@@ -5,6 +5,7 @@
     "projects": "Projects",
     "ongoingTasks": "Ongoing Tasks",
     "timesheet": "Timesheet",
+    "procurements": "Procurements",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminPortal": "Admin portal",
@@ -98,12 +99,15 @@
     "backToProjects": "← Back to Projects",
     "tasks": "Tasks",
     "timesheetSummary": "Timesheet Summary",
+    "expenses": "Expenses",
     "createTask": "Create Task",
     "backlog": "Backlog",
     "inProgress": "In Progress",
     "blocked": "Blocked",
     "done": "Done",
     "noTasks": "No tasks",
+    "noExpenses": "No expenses allocated to this project",
+    "totalAllocated": "Total Allocated",
     "comingSoon": "Timesheet summary coming soon..."
   },
   "tasks": {
@@ -220,5 +224,42 @@
     "admin": "Admin",
     "manager": "Manager",
     "contributor": "Contributor"
+  },
+  "procurements": {
+    "title": "IT Procurements",
+    "createExpense": "Create Expense",
+    "editExpense": "Edit Expense",
+    "searchPlaceholder": "Search by invoice number or vendor...",
+    "invoiceNumber": "Invoice Number",
+    "vendor": "Vendor (Company)",
+    "date": "Date",
+    "totalAmount": "Total Amount",
+    "allocatedToProjects": "Allocated to Projects",
+    "paymentMethod": "Payment Method",
+    "paymentStatus": "Payment Status",
+    "notes": "Notes",
+    "deleteConfirm": "Are you sure you want to delete this expense?",
+    "noExpenses": "No expenses found",
+    "addNewCompany": "Add New Company",
+    "allocateToProjects": "Allocate to Projects",
+    "project": "Project",
+    "allocatedAmount": "Allocated Amount",
+    "addAllocation": "Add Allocation",
+    "removeAllocation": "Remove",
+    "allocationSumError": "Sum of allocations must equal total amount",
+    "duplicateProjectError": "Each project can only be allocated once",
+    "totalAllocated": "Total Allocated",
+    "remaining": "Remaining"
+  },
+  "paymentMethod": {
+    "CORPORATE_CREDIT_CARD": "Corporate Credit Card",
+    "BANK_TRANSFER": "Bank Transfer",
+    "PAYPAL": "PayPal",
+    "OTHER": "Other"
+  },
+  "paymentStatus": {
+    "PENDING": "Pending",
+    "PARTIALLY_PAID": "Partially Paid",
+    "PAID": "Paid"
   }
 }

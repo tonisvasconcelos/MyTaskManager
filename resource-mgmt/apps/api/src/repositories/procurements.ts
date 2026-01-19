@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
 import type { Expense, Prisma, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { Prisma as PrismaNamespace } from '@prisma/client';
 
 export interface ExpenseWithRelations extends Expense {
   company: {
@@ -17,6 +18,48 @@ export interface ExpenseWithRelations extends Expense {
       name: string;
     };
   }>;
+}
+
+// Helper function to check if an error is a schema-related Prisma error
+function isSchemaError(error: any): boolean {
+  // Check if it's a Prisma error instance
+  const isPrismaError = error instanceof PrismaNamespace.PrismaClientKnownRequestError ||
+                       error instanceof PrismaNamespace.PrismaClientValidationError ||
+                       error instanceof PrismaNamespace.PrismaClientRustPanicError ||
+                       error instanceof PrismaNamespace.PrismaClientInitializationError ||
+                       (error?.constructor?.name?.includes('Prisma'));
+  
+  if (!isPrismaError) {
+    return false;
+  }
+  
+  // Check for specific Prisma error codes that indicate schema issues
+  if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const schemaErrorCodes = ['P2001', 'P2021', 'P2022', 'P2010', 'P2011'];
+    if (schemaErrorCodes.includes(error.code)) {
+      return true;
+    }
+  }
+  
+  // Check error message for schema-related keywords
+  const errorMessage = (error?.message || '').toLowerCase();
+  const schemaKeywords = [
+    'does not exist',
+    'unknown column',
+    'relation',
+    'table',
+    'column',
+    'schema',
+    'migration',
+    'billable',
+    'language',
+    'documenturl'
+  ];
+  
+  // Check if message contains schema-related keywords
+  const hasSchemaKeywords = schemaKeywords.some(keyword => errorMessage.includes(keyword));
+  
+  return hasSchemaKeywords;
 }
 
 export async function findProcurements(
@@ -44,35 +87,51 @@ export async function findProcurements(
     }),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.expense.findMany({
-      where,
-      skip,
-      take,
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
+  let data: ExpenseWithRelations[] = [];
+  let total = 0;
+
+  try {
+    const [expenses, count] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
-        },
-        allocations: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
+          allocations: {
+            include: {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.expense.count({ where }),
-  ]);
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.expense.count({ where }),
+    ]);
+    data = expenses as ExpenseWithRelations[];
+    total = count;
+  } catch (error: any) {
+    console.error('Error fetching procurements:', error);
+    if (isSchemaError(error)) {
+      console.warn('Procurements query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
+      // Return empty result instead of throwing
+      return { data: [], total: 0, page, pageSize };
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 
-  return { data: data as ExpenseWithRelations[], total, page, pageSize };
+  return { data, total, page, pageSize };
 }
 
 export async function findProcurementByIdForTenant(
@@ -340,38 +399,48 @@ export async function findExpensesByProject(
   tenantId: string,
   projectId: string
 ): Promise<ExpenseWithRelations[]> {
-  const expenses = await prisma.expense.findMany({
-    where: {
-      tenantId,
-      allocations: {
-        some: {
-          projectId,
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: {
+        tenantId,
+        allocations: {
+          some: {
+            projectId,
+          },
         },
       },
-    },
-    include: {
-      company: {
-        select: {
-          id: true,
-          name: true,
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-      },
-      allocations: {
-        where: {
-          projectId,
-        },
-        include: {
-          project: {
-            select: {
-              id: true,
-              name: true,
+        allocations: {
+          where: {
+            projectId,
+          },
+          include: {
+            project: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { date: 'desc' },
-  });
+      orderBy: { date: 'desc' },
+    });
 
-  return expenses as ExpenseWithRelations[];
+    return expenses as ExpenseWithRelations[];
+  } catch (error: any) {
+    console.error('Error fetching expenses by project:', error);
+    if (isSchemaError(error)) {
+      console.warn('Expenses by project query failed due to schema mismatch. Returning empty array. Error:', error?.message || error?.code);
+      return [];
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }

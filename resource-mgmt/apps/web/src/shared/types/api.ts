@@ -182,3 +182,68 @@ export interface Expense {
   }
   allocations?: ExpenseAllocation[]
 }
+
+export interface Payment {
+  id: string
+  tenantId: string
+  expenseId: string
+  amount: string
+  paymentDate: string
+  paymentMethod: PaymentMethod
+  referenceNumber: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  expense?: {
+    id: string
+    invoiceNumber: string
+    company: {
+      id: string
+      name: string
+    }
+  }
+}
+
+export interface Sale {
+  id: string
+  tenantId: string
+  companyId: string
+  invoiceNumber: string
+  date: string
+  totalAmount: string
+  status: PaymentStatus
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  company?: {
+    id: string
+    name: string
+  }
+}
+
+export interface ProjectFinancialEntry {
+  id: string
+  type: 'expense' | 'payment' | 'sale'
+  date: string
+  amount: number
+  description: string
+  projectId: string
+  projectName: string
+  companyName: string
+  invoiceNumber?: string
+  referenceNumber?: string
+}
+
+export interface ProjectFinancialSummary {
+  projectId: string
+  projectName: string
+  totalExpenses: number
+  totalPayments: number
+  totalSales: number
+  netAmount: number
+}
+
+export interface ProjectFinancialEntriesResponse {
+  entries: ProjectFinancialEntry[]
+  summary: ProjectFinancialSummary[]
+}

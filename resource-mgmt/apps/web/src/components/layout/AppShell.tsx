@@ -27,7 +27,7 @@ export function AppShell({ children }: AppShellProps) {
     { path: '/projects', label: t('common.projects'), icon: '📁' },
     { path: '/tasks/ongoing', label: t('common.ongoingTasks'), icon: '⚡' },
     { path: '/timesheet', label: t('common.timesheet'), icon: '⏱️' },
-    { path: '/procurements', label: t('common.procurements'), icon: '💰' },
+    { path: '/finance', label: t('common.finance'), icon: '💰' },
   ]
 
   // Close mobile menu when route changes
@@ -140,7 +140,7 @@ export function AppShell({ children }: AppShellProps) {
             {/* Navigation Items */}
             <nav className="space-y-2">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path
+                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/')
                 const isDisabled = !loggedIn && item.path !== '/login'
                 return (
                   <Link

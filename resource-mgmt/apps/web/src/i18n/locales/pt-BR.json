@@ -6,6 +6,7 @@
     "ongoingTasks": "Tarefas em Andamento",
     "timesheet": "Registro de Horas",
     "procurements": "Compras de TI",
+    "finance": "Finanças",
     "signIn": "Entrar",
     "signOut": "Sair",
     "adminPortal": "Portal do administrador",
@@ -226,7 +227,7 @@
     "contributor": "Colaborador"
   },
   "procurements": {
-    "title": "Compras de TI",
+    "title": "Despesas",
     "createExpense": "Criar Despesa",
     "editExpense": "Editar Despesa",
     "searchPlaceholder": "Buscar por número de nota fiscal ou fornecedor...",
@@ -266,5 +267,41 @@
     "PENDING": "Pendente",
     "PARTIALLY_PAID": "Parcialmente Pago",
     "PAID": "Pago"
+  },
+  "finance": {
+    "payments": "Pagamentos",
+    "expenses": "Despesas",
+    "sales": "Vendas",
+    "projectFinancialEntries": "Entradas Financeiras do Projeto",
+    "allProjects": "Todos os Projetos",
+    "totalExpenses": "Total de Despesas",
+    "totalPayments": "Total de Pagamentos",
+    "totalSales": "Total de Vendas",
+    "netAmount": "Valor Líquido",
+    "noEntries": "Nenhuma entrada financeira encontrada",
+    "entryType": {
+      "expense": "Despesa",
+      "payment": "Pagamento",
+      "sale": "Venda"
+    }
+  },
+  "payments": {
+    "createPayment": "Criar Pagamento",
+    "editPayment": "Editar Pagamento",
+    "searchPlaceholder": "Buscar por número de referência ou nota fiscal...",
+    "expense": "Despesa",
+    "amount": "Valor",
+    "paymentDate": "Data do Pagamento",
+    "paymentMethod": "Método de Pagamento",
+    "referenceNumber": "Número de Referência",
+    "referenceNumberPlaceholder": "Número de referência opcional",
+    "notes": "Notas",
+    "deleteConfirm": "Tem certeza que deseja excluir este pagamento?",
+    "noPayments": "Nenhum pagamento encontrado",
+    "selectExpense": "Selecione uma despesa"
+  },
+  "sales": {
+    "comingSoon": "Em Breve",
+    "comingSoonDescription": "O módulo de vendas estará disponível em uma atualização futura."
   }
 }

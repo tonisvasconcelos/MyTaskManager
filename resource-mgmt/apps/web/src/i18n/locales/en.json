@@ -6,6 +6,7 @@
     "ongoingTasks": "Ongoing Tasks",
     "timesheet": "Timesheet",
     "procurements": "Procurements",
+    "finance": "Finance",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminPortal": "Admin portal",
@@ -226,7 +227,7 @@
     "contributor": "Contributor"
   },
   "procurements": {
-    "title": "IT Procurements",
+    "title": "Procurement",
     "createExpense": "Create Expense",
     "editExpense": "Edit Expense",
     "searchPlaceholder": "Search by invoice number or vendor...",
@@ -266,5 +267,41 @@
     "PENDING": "Pending",
     "PARTIALLY_PAID": "Partially Paid",
     "PAID": "Paid"
+  },
+  "finance": {
+    "payments": "Payments",
+    "expenses": "Expenses",
+    "sales": "Sales",
+    "projectFinancialEntries": "Project Financial Entries",
+    "allProjects": "All Projects",
+    "totalExpenses": "Total Expenses",
+    "totalPayments": "Total Payments",
+    "totalSales": "Total Sales",
+    "netAmount": "Net Amount",
+    "noEntries": "No financial entries found",
+    "entryType": {
+      "expense": "Expense",
+      "payment": "Payment",
+      "sale": "Sale"
+    }
+  },
+  "payments": {
+    "createPayment": "Create Payment",
+    "editPayment": "Edit Payment",
+    "searchPlaceholder": "Search by reference number or invoice...",
+    "expense": "Expense",
+    "amount": "Amount",
+    "paymentDate": "Payment Date",
+    "paymentMethod": "Payment Method",
+    "referenceNumber": "Reference Number",
+    "referenceNumberPlaceholder": "Optional reference number",
+    "notes": "Notes",
+    "deleteConfirm": "Are you sure you want to delete this payment?",
+    "noPayments": "No payments found",
+    "selectExpense": "Select an expense"
+  },
+  "sales": {
+    "comingSoon": "Coming Soon",
+    "comingSoonDescription": "Sales module will be available in a future update."
   }
 }

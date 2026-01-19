@@ -9,6 +9,9 @@ import { tasksRouter } from './routes/tasks.js';
 import { attachmentsRouter } from './routes/attachments.js';
 import { timesheetRouter } from './routes/timesheet.js';
 import { procurementsRouter } from './routes/procurements.js';
+import { paymentsRouter } from './routes/payments.js';
+import { salesRouter } from './routes/sales.js';
+import { financeRouter } from './routes/finance.js';
 import { authRouter } from './routes/auth.js';
 import { requireTenantAuth } from './middlewares/requireAuth.js';
 import { adminRouter } from './routes/admin.js';
@@ -81,6 +84,9 @@ export function createApp(): Express {
   app.use('/api', attachmentsRouter);
   app.use('/api', timesheetRouter);
   app.use('/api/procurements', procurementsRouter);
+  app.use('/api/payments', paymentsRouter);
+  app.use('/api/sales', salesRouter);
+  app.use('/api/finance', financeRouter);
 
   // Error handler (must be last)
   app.use(errorHandler);

@@ -27,6 +27,8 @@ model Tenant {
   tasks     Task[]
   timeEntries TimeEntry[]
   expenses  Expense[]
+  payments  Payment[]
+  sales     Sale[]
 
   @@index([slug])
 }
@@ -109,6 +111,7 @@ model Company {
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   projects Project[]
   expenses Expense[]
+  sales    Sale[]
 
   @@index([tenantId])
   @@index([tenantId, name])
@@ -246,6 +249,7 @@ model Expense {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   allocations   ExpenseAllocation[]
+  payments      Payment[]
 
   @@index([tenantId])
   @@index([tenantId, invoiceNumber])
@@ -265,4 +269,44 @@ model ExpenseAllocation {
   @@index([expenseId])
   @@index([projectId])
   @@unique([expenseId, projectId])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  tenantId        String
+  expenseId       String
+  amount          Decimal       @db.Decimal(10,2)
+  paymentDate     DateTime
+  paymentMethod   PaymentMethod
+  referenceNumber String?
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([expenseId])
+  @@index([tenantId, paymentDate])
+}
+
+model Sale {
+  id            String   @id @default(uuid())
+  tenantId      String
+  companyId     String
+  invoiceNumber String
+  date          DateTime
+  totalAmount   Decimal  @db.Decimal(10,2)
+  status        PaymentStatus @default(PENDING)
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, invoiceNumber])
+  @@unique([tenantId, companyId, invoiceNumber])
 }

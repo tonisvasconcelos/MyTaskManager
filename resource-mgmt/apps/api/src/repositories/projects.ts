@@ -23,70 +23,100 @@ export async function findProjects(
     ...(status && { status }),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.project.findMany({
-      where,
-      skip,
-      take,
+  try {
+    const [data, total] = await Promise.all([
+      prisma.project.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.project.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
+  } catch (err: any) {
+    // Handle database schema errors
+    if (err?.message?.includes('billable') || err?.message?.includes('language') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch detected. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: Database schema mismatch. Please ensure all migrations have been applied.');
+    }
+    throw err;
+  }
+}
+
+export async function findProjectByIdForTenant(tenantId: string, id: string): Promise<Project | null> {
+  try {
+    const project = await prisma.project.findFirst({
+      where: { id, tenantId },
       include: {
         company: {
           select: {
             id: true,
+            tenantId: true,
             name: true,
+            email: true,
+            phone: true,
+            website: true,
+            address: true,
+            notes: true,
+            countryCode: true,
+            invoicingCurrencyCode: true,
+            taxRegistrationNo: true,
+            billingUnit: true,
+            unitPrice: true,
+            generalNotes: true,
+            logoFileName: true,
+            logoOriginalName: true,
+            logoMimeType: true,
+            logoSize: true,
+            logoUrl: true,
+            // Exclude logoData (BLOB) from company include
+            createdAt: true,
+            updatedAt: true,
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.project.count({ where }),
-  ]);
-
-  return { data, total, page, pageSize };
-}
-
-export async function findProjectByIdForTenant(tenantId: string, id: string): Promise<Project | null> {
-  return prisma.project.findFirst({
-    where: { id, tenantId },
-    include: {
-      company: {
-        select: {
-          id: true,
-          tenantId: true,
-          name: true,
-          email: true,
-          phone: true,
-          website: true,
-          address: true,
-          notes: true,
-          countryCode: true,
-          invoicingCurrencyCode: true,
-          taxRegistrationNo: true,
-          billingUnit: true,
-          unitPrice: true,
-          generalNotes: true,
-          logoFileName: true,
-          logoOriginalName: true,
-          logoMimeType: true,
-          logoSize: true,
-          logoUrl: true,
-          // Exclude logoData (BLOB) from company include
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-      tasks: {
-        include: {
-          assignee: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
+        tasks: {
+          include: {
+            assignee: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+
+    // Add default billable field to tasks if missing (for backward compatibility)
+    if (project && project.tasks) {
+      return {
+        ...project,
+        tasks: project.tasks.map((task: any) => ({
+          ...task,
+          billable: task.billable || 'Billable',
+        })),
+      } as Project;
+    }
+    return project;
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function createProject(

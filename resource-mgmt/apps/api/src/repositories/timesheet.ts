@@ -243,68 +243,110 @@ export async function createTimeEntry(
   tenantId: string,
   data: Omit<Prisma.TimeEntryCreateInput, 'tenant'>
 ): Promise<TimeEntryWithRelations> {
-  return prisma.timeEntry.create({
-    data: {
-      ...data,
-      tenant: { connect: { id: tenantId } },
-    },
-    include: {
-      task: {
-        include: {
-          project: {
-            include: {
-              company: {
-                select: {
-                  id: true,
-                  name: true,
+  try {
+    const entry = await prisma.timeEntry.create({
+      data: {
+        ...data,
+        tenant: { connect: { id: tenantId } },
+      },
+      include: {
+        task: {
+          include: {
+            project: {
+              include: {
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
                 },
               },
             },
           },
         },
-      },
-      user: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
         },
       },
-    },
-  });
+    });
+
+    // Add default billable field to task if missing (for backward compatibility)
+    if (entry && entry.task) {
+      return {
+        ...entry,
+        task: {
+          ...entry.task,
+          billable: (entry.task as any).billable || 'Billable',
+        },
+      } as TimeEntryWithRelations;
+    }
+    return entry;
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function updateTimeEntry(
   id: string,
   data: Prisma.TimeEntryUpdateInput
 ): Promise<TimeEntryWithRelations> {
-  return prisma.timeEntry.update({
-    where: { id },
-    data,
-    include: {
-      task: {
-        include: {
-          project: {
-            include: {
-              company: {
-                select: {
-                  id: true,
-                  name: true,
+  try {
+    const entry = await prisma.timeEntry.update({
+      where: { id },
+      data,
+      include: {
+        task: {
+          include: {
+            project: {
+              include: {
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
                 },
               },
             },
           },
         },
-      },
-      user: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
         },
       },
-    },
-  });
+    });
+
+    // Add default billable field to task if missing (for backward compatibility)
+    if (entry && entry.task) {
+      return {
+        ...entry,
+        task: {
+          ...entry.task,
+          billable: (entry.task as any).billable || 'Billable',
+        },
+      } as TimeEntryWithRelations;
+    }
+    return entry;
+  } catch (err: any) {
+    // Handle case where billable field doesn't exist (migration not run)
+    if (err?.message?.includes('billable') || err?.code === 'P2001' || err?.message?.includes('Unknown column')) {
+      console.error('Database schema mismatch: billable field missing. Migration required.');
+      throw new Error('DATABASE_SCHEMA_MISMATCH: The billable field is missing. Please run database migrations.');
+    }
+    throw err;
+  }
 }
 
 export async function deleteTimeEntry(id: string): Promise<TimeEntry> {

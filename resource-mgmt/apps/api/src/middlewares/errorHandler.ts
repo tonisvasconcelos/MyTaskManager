@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../lib/errors.js';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 export function errorHandler(
   err: Error | AppError | ZodError,
@@ -29,6 +30,63 @@ export function errorHandler(
         code: err.code,
         message: err.message,
         details: err.details,
+      },
+    });
+  }
+
+  // Prisma errors
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error('Prisma error:', err);
+    
+    // Handle specific Prisma error codes
+    if (err.code === 'P2002') {
+      return res.status(409).json({
+        error: {
+          code: 'DUPLICATE_ENTRY',
+          message: 'A record with this value already exists',
+          details: err.meta,
+        },
+      });
+    }
+    
+    if (err.code === 'P2025') {
+      return res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'The requested record was not found',
+          details: err.meta,
+        },
+      });
+    }
+
+    // Database schema mismatch (e.g., missing column)
+    if (err.code === 'P2001' || err.message?.includes('Unknown column') || err.message?.includes('column') && err.message?.includes('does not exist')) {
+      return res.status(500).json({
+        error: {
+          code: 'DATABASE_SCHEMA_ERROR',
+          message: 'Database schema mismatch. Please ensure all migrations have been applied.',
+          details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        },
+      });
+    }
+
+    return res.status(500).json({
+      error: {
+        code: 'DATABASE_ERROR',
+        message: 'A database error occurred',
+        details: process.env.NODE_ENV === 'development' ? { code: err.code, message: err.message, meta: err.meta } : undefined,
+      },
+    });
+  }
+
+  // Prisma client initialization errors
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    console.error('Prisma initialization error:', err);
+    return res.status(500).json({
+      error: {
+        code: 'DATABASE_CONNECTION_ERROR',
+        message: 'Unable to connect to the database. Please check database configuration and connectivity.',
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
       },
     });
   }

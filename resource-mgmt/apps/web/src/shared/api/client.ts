@@ -52,19 +52,52 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorData: ApiError
     try {
-      errorData = await response.json()
-    } catch {
+      const text = await response.text()
+      if (text) {
+        errorData = JSON.parse(text)
+      } else {
+        // Empty response body
+        throw new Error('Empty response')
+      }
+    } catch (parseError) {
+      // If response is not JSON or is empty, create a more helpful error
+      const statusText = response.statusText || 'Unknown Error'
+      let message = `HTTP ${response.status}: ${statusText}`
+      
+      if (response.status === 500) {
+        message = 'Server error. Please check if the backend service is running and the database is accessible.'
+      } else if (response.status === 404) {
+        message = 'The requested resource was not found. Please check the API endpoint.'
+      } else if (response.status === 401) {
+        message = 'Authentication failed. Please check your credentials.'
+      } else if (response.status === 403) {
+        message = 'Access denied. You do not have permission to perform this action.'
+      } else if (response.status === 0 || response.status === 503) {
+        message = 'Unable to connect to the server. Please check your network connection and ensure the API is running.'
+      }
+      
       throw new ApiClientError(
-        'UNKNOWN_ERROR',
-        `HTTP ${response.status}: ${response.statusText}`
+        `HTTP_${response.status}`,
+        message,
+        { status: response.status, statusText, url: response.url }
       )
     }
 
-    throw new ApiClientError(
-      errorData.error.code,
-      errorData.error.message,
-      errorData.error.details
-    )
+    // If we have error data, use it
+    if (errorData?.error) {
+      throw new ApiClientError(
+        errorData.error.code || `HTTP_${response.status}`,
+        errorData.error.message || `HTTP ${response.status}: ${response.statusText}`,
+        errorData.error.details
+      )
+    } else {
+      // Fallback if error structure is unexpected
+      throw new ApiClientError(
+        `HTTP_${response.status}`,
+        `HTTP ${response.status}: ${response.statusText}`,
+        errorData
+      )
+    }
   }
 
   // Handle 204 No Content

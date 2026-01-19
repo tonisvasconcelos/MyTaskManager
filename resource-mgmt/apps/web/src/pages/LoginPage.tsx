@@ -42,15 +42,32 @@ export function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setError(null)
     try {
-      const result = await apiClient.post<{ token: string }>('/auth/login', {
+      const result = await apiClient.post<{ token: string; user?: any }>('/auth/login', {
         tenant: data.tenant,
         email: data.email,
         password: data.password,
       })
-      setUserToken(result.token)
-      navigate('/', { replace: true })
+      
+      if (result.token) {
+        setUserToken(result.token)
+        navigate('/', { replace: true })
+      } else {
+        setError(t('login.error'))
+      }
     } catch (e: any) {
-      setError(e?.message || t('login.error'))
+      console.error('Login error:', e)
+      // Provide more specific error messages
+      if (e instanceof Error) {
+        if (e.message.includes('connect') || e.message.includes('network') || e.message.includes('fetch')) {
+          setError('Unable to connect to the server. Please check your network connection and ensure the API service is running.')
+        } else if (e.message.includes('500') || e.message.includes('Server error')) {
+          setError('Server error occurred. Please contact support or try again later.')
+        } else {
+          setError(e.message || t('login.error'))
+        }
+      } else {
+        setError(e?.message || t('login.error'))
+      }
     }
   }
 

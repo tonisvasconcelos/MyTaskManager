@@ -27,10 +27,27 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       throw new ValidationError('Tenant license expired');
     }
 
-    const user = await prisma.user.findFirst({
-      where: { tenantId: tenant.id, email: email.toLowerCase() },
-      select: { id: true, tenantId: true, email: true, passwordHash: true, role: true, fullName: true, language: true },
-    });
+    // Try to select language field, but handle case where it might not exist (migration not run)
+    let user: any;
+    try {
+      user = await prisma.user.findFirst({
+        where: { tenantId: tenant.id, email: email.toLowerCase() },
+        select: { id: true, tenantId: true, email: true, passwordHash: true, role: true, fullName: true, language: true },
+      });
+    } catch (err: any) {
+      // If language field doesn't exist, try without it
+      if (err?.message?.includes('language') || err?.code === 'P2001') {
+        user = await prisma.user.findFirst({
+          where: { tenantId: tenant.id, email: email.toLowerCase() },
+          select: { id: true, tenantId: true, email: true, passwordHash: true, role: true, fullName: true },
+        });
+        if (user) {
+          user.language = 'EN'; // Default to EN if field doesn't exist
+        }
+      } else {
+        throw err;
+      }
+    }
     if (!user) {
       throw new NotFoundError('User');
     }
@@ -66,10 +83,27 @@ export async function me(req: Request, res: Response, next: NextFunction) {
     const auth = req.auth!;
     if (!auth.tenantId) throw new ValidationError('Tenant token required');
 
-    const user = await prisma.user.findFirst({
-      where: { id: auth.userId, tenantId: auth.tenantId },
-      select: { id: true, fullName: true, email: true, role: true, tenantId: true, language: true },
-    });
+    // Try to select language field, but handle case where it might not exist (migration not run)
+    let user: any;
+    try {
+      user = await prisma.user.findFirst({
+        where: { id: auth.userId, tenantId: auth.tenantId },
+        select: { id: true, fullName: true, email: true, role: true, tenantId: true, language: true },
+      });
+    } catch (err: any) {
+      // If language field doesn't exist, try without it
+      if (err?.message?.includes('language') || err?.code === 'P2001') {
+        user = await prisma.user.findFirst({
+          where: { id: auth.userId, tenantId: auth.tenantId },
+          select: { id: true, fullName: true, email: true, role: true, tenantId: true },
+        });
+        if (user) {
+          user.language = 'EN'; // Default to EN if field doesn't exist
+        }
+      } else {
+        throw err;
+      }
+    }
     if (!user) throw new NotFoundError('User', auth.userId);
 
     const tenant = await prisma.tenant.findUnique({

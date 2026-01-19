@@ -30,83 +30,137 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
 
     // Get all expenses with allocations
     // Only include expenses that have at least one allocation
-    const expenses = await prisma.expense.findMany({
-      where: {
-        tenantId,
-        allocations: {
-          ...(projectId
-            ? { some: { projectId } }
-            : { some: {} }), // If no projectId, still only get expenses with allocations
-        },
-      },
-      include: {
-        company: {
-          select: {
-            name: true,
-          },
-        },
-        allocations: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Get all payments
-    // Only include payments for expenses that have allocations
-    const payments = await prisma.payment.findMany({
-      where: {
-        tenantId,
-        expense: {
+    let expenses: any[] = [];
+    try {
+      expenses = await prisma.expense.findMany({
+        where: {
+          tenantId,
           allocations: {
             ...(projectId
               ? { some: { projectId } }
-              : { some: {} }), // If no projectId, still only get payments for expenses with allocations
+              : { some: {} }), // If no projectId, still only get expenses with allocations
           },
         },
-      },
-      include: {
-        expense: {
-          include: {
-            company: {
-              select: {
-                name: true,
+        include: {
+          company: {
+            select: {
+              name: true,
+            },
+          },
+          allocations: {
+            include: {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching expenses:', error);
+      // If schema error (missing table/column), return empty array
+      const isSchemaError = error?.code === 'P2001' || 
+                           error?.code === 'P2021' || 
+                           error?.code === 'P2022' ||
+                           error?.message?.includes('does not exist') || 
+                           error?.message?.includes('Unknown column') ||
+                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
+      if (isSchemaError) {
+        console.warn('Expenses table may not exist or schema mismatch. Returning empty array.');
+        expenses = [];
+      } else {
+        throw error;
+      }
+    }
+
+    // Get all payments
+    // Only include payments for expenses that have allocations
+    let payments: any[] = [];
+    try {
+      payments = await prisma.payment.findMany({
+        where: {
+          tenantId,
+          expense: {
             allocations: {
-              include: {
-                project: {
-                  select: {
-                    id: true,
-                    name: true,
+              ...(projectId
+                ? { some: { projectId } }
+                : { some: {} }), // If no projectId, still only get payments for expenses with allocations
+            },
+          },
+        },
+        include: {
+          expense: {
+            include: {
+              company: {
+                select: {
+                  name: true,
+                },
+              },
+              allocations: {
+                include: {
+                  project: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    });
+      });
+    } catch (error: any) {
+      console.error('Error fetching payments:', error);
+      // If schema error (missing table/column), return empty array
+      const isSchemaError = error?.code === 'P2001' || 
+                           error?.code === 'P2021' || 
+                           error?.code === 'P2022' ||
+                           error?.message?.includes('does not exist') || 
+                           error?.message?.includes('Unknown column') ||
+                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
+      if (isSchemaError) {
+        console.warn('Payments table may not exist or schema mismatch. Returning empty array.');
+        payments = [];
+      } else {
+        throw error;
+      }
+    }
 
     // Get all sales (for now, sales are not project-specific, but we'll include them)
-    const sales = await prisma.sale.findMany({
-      where: {
-        tenantId,
-      },
-      include: {
-        company: {
-          select: {
-            name: true,
+    let sales: any[] = [];
+    try {
+      sales = await prisma.sale.findMany({
+        where: {
+          tenantId,
+        },
+        include: {
+          company: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error: any) {
+      console.error('Error fetching sales:', error);
+      // If schema error (missing table/column), return empty array
+      const isSchemaError = error?.code === 'P2001' || 
+                           error?.code === 'P2021' || 
+                           error?.code === 'P2022' ||
+                           error?.message?.includes('does not exist') || 
+                           error?.message?.includes('Unknown column') ||
+                           (error?.message?.includes('relation') && error?.message?.includes('does not exist'));
+      if (isSchemaError) {
+        console.warn('Sales table may not exist or schema mismatch. Returning empty array.');
+        sales = [];
+      } else {
+        throw error;
+      }
+    }
 
     // Build entries array
     const entries: ProjectFinancialEntry[] = [];

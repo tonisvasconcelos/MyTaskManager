@@ -155,6 +155,30 @@ export async function findPaymentByIdForTenant(
   }
 }
 
+// Helper function to ensure currency columns exist
+async function ensureCurrencyColumnsExist(): Promise<void> {
+  try {
+    // Check if columns exist by trying to query them
+    await prisma.$queryRaw`SELECT "paymentCurrencyCode", "amountLCY" FROM "Payment" LIMIT 1`;
+  } catch (error: any) {
+    const errorMessage = (error?.message || '').toLowerCase();
+    if (errorMessage.includes('column') && (errorMessage.includes('paymentcurrencycode') || errorMessage.includes('amountlcy'))) {
+      console.warn('Currency columns missing, creating them now...');
+      try {
+        // Create columns directly using raw SQL
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "paymentCurrencyCode" VARCHAR(3);
+          ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "amountLCY" DECIMAL(10,2);
+        `);
+        console.log('Currency columns created successfully');
+      } catch (createError: any) {
+        console.error('Failed to create currency columns:', createError);
+        // Don't throw - we'll handle missing columns in the create logic
+      }
+    }
+  }
+}
+
 export async function createPayment(
   tenantId: string,
   data: {
@@ -171,6 +195,9 @@ export async function createPayment(
   const amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
   const amountLCY = data.amountLCY ? (typeof data.amountLCY === 'string' ? parseFloat(data.amountLCY) : data.amountLCY) : null;
   const paymentDate = typeof data.paymentDate === 'string' ? new Date(data.paymentDate) : data.paymentDate;
+
+  // Ensure currency columns exist before attempting to create
+  await ensureCurrencyColumnsExist();
 
   try {
     // Try creating with all fields including new currency fields
@@ -304,7 +331,19 @@ export async function createPayment(
               message: finalError?.message,
               meta: finalError?.meta,
             });
-            throw new Error(`Payment creation failed: ${finalError?.message || 'Unknown error'}. Please ensure migrations are applied.`);
+            
+            // Check if it's a foreign key constraint error (expense doesn't exist)
+            const finalErrorMessage = (finalError?.message || '').toLowerCase();
+            if (finalErrorMessage.includes('foreign key') || finalErrorMessage.includes('constraint')) {
+              throw new Error(`Payment creation failed: The selected expense does not exist or is invalid.`);
+            }
+            
+            // Check if it's still a schema error
+            if (isSchemaError(finalError)) {
+              throw new Error(`Payment creation failed due to database schema mismatch. Error: ${finalError?.message || 'Unknown error'}. Please ensure migrations are applied.`);
+            }
+            
+            throw new Error(`Payment creation failed: ${finalError?.message || 'Unknown error'}. Please check the logs for details.`);
           }
         }
         throw retryError;

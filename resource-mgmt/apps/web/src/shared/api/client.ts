@@ -95,6 +95,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
         )
       }
       
+      // Log validation errors with details
+      if (errorData.error.code === 'VALIDATION_ERROR' && errorData.error.details) {
+        console.error('Validation failed:', errorData.error.details)
+      }
+      
       throw new ApiClientError(
         errorData.error.code || `HTTP_${response.status}`,
         errorData.error.message || `HTTP ${response.status}: ${response.statusText}`,

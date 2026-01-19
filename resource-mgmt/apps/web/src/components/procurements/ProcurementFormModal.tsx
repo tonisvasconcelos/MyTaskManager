@@ -234,15 +234,36 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
         refStartDate: data.refStartDate || null,
         refEndDate: data.refEndDate || null,
         invoiceCurrencyCode: data.invoiceCurrencyCode || null,
-        allocations: data.allocations.map((alloc) => ({
-          projectId: alloc.projectId,
-          allocatedAmount: alloc.allocatedAmount !== undefined && alloc.allocatedAmount !== null
-            ? (typeof alloc.allocatedAmount === 'number' ? alloc.allocatedAmount : parseFloat(alloc.allocatedAmount))
-            : null,
-          allocatedPercentage: alloc.allocatedPercentage !== undefined && alloc.allocatedPercentage !== null
-            ? (typeof alloc.allocatedPercentage === 'number' ? alloc.allocatedPercentage : parseFloat(alloc.allocatedPercentage))
-            : null,
-        })),
+        allocations: data.allocations.map((alloc) => {
+          // Check if values exist and are not empty strings
+          const amountValue = alloc.allocatedAmount
+          const percentageValue = alloc.allocatedPercentage
+          const hasAmount = amountValue !== undefined && amountValue !== null && amountValue !== ''
+          const hasPercentage = percentageValue !== undefined && percentageValue !== null && percentageValue !== ''
+          
+          // Only include the field that has a value, omit the other one completely
+          const allocationData: any = {
+            projectId: alloc.projectId,
+          }
+          
+          if (hasAmount) {
+            const amount = typeof amountValue === 'number' 
+              ? amountValue 
+              : parseFloat(String(amountValue).replace(',', '.'))
+            if (!isNaN(amount) && amount > 0) {
+              allocationData.allocatedAmount = amount
+            }
+          } else if (hasPercentage) {
+            const percentage = typeof percentageValue === 'number'
+              ? percentageValue
+              : parseFloat(String(percentageValue).replace(',', '.'))
+            if (!isNaN(percentage) && percentage >= 0 && percentage <= 100) {
+              allocationData.allocatedPercentage = percentage
+            }
+          }
+          
+          return allocationData
+        }),
       }
 
       if (expense) {
@@ -252,8 +273,14 @@ export function ProcurementFormModal({ isOpen, onClose, expense }: ProcurementFo
       }
       onClose()
       reset()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving expense:', error)
+      // Log validation details if available
+      if (error?.details) {
+        console.error('Validation errors:', error.details)
+      }
+      // Re-throw to let React Query handle it (will show error state)
+      throw error
     }
   }
 

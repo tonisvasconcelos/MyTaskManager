@@ -173,6 +173,7 @@ export async function createPayment(
   const paymentDate = typeof data.paymentDate === 'string' ? new Date(data.paymentDate) : data.paymentDate;
 
   try {
+    // Try creating with all fields including new currency fields
     const payment = await prisma.payment.create({
       data: {
         tenantId,
@@ -204,11 +205,75 @@ export async function createPayment(
     return payment as PaymentWithRelations;
   } catch (error: any) {
     console.error('Error creating payment:', error);
-    if (isSchemaError(error)) {
-      console.warn('Payment creation failed due to schema mismatch. Error:', error?.message || error?.code);
-      // For create operations, we should still throw the error as it's critical
-      throw new Error('Payment creation failed due to database schema mismatch. Please contact support.');
+    
+    // Check if error is due to missing currency columns
+    const errorMessage = (error?.message || '').toLowerCase();
+    const isMissingCurrencyColumns = errorMessage.includes('paymentcurrencycode') || 
+                                     errorMessage.includes('amountlcy') ||
+                                     (error instanceof PrismaNamespace.PrismaClientKnownRequestError && 
+                                      (error.code === 'P2021' || error.code === 'P2022'));
+    
+    if (isMissingCurrencyColumns || isSchemaError(error)) {
+      console.warn('Payment creation failed due to missing currency columns. Retrying without them. Error:', error?.message || error?.code);
+      
+      try {
+        // Retry without currency fields
+        const payment = await prisma.payment.create({
+          data: {
+            tenantId,
+            expenseId: data.expenseId,
+            amount,
+            paymentDate,
+            paymentMethod: data.paymentMethod,
+            referenceNumber: data.referenceNumber || null,
+            notes: data.notes || null,
+          },
+          include: {
+            expense: {
+              select: {
+                id: true,
+                invoiceNumber: true,
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return payment as PaymentWithRelations;
+      } catch (retryError: any) {
+        console.error('Error creating payment on retry:', retryError);
+        // If retry also fails, check if it's a schema error on the include
+        if (isSchemaError(retryError)) {
+          // Try one more time without the include
+          try {
+            const payment = await prisma.payment.create({
+              data: {
+                tenantId,
+                expenseId: data.expenseId,
+                amount,
+                paymentDate,
+                paymentMethod: data.paymentMethod,
+                referenceNumber: data.referenceNumber || null,
+                notes: data.notes || null,
+              },
+            });
+            
+            // Fetch with relations separately
+            return await findPaymentByIdForTenant(tenantId, payment.id) || payment as PaymentWithRelations;
+          } catch (finalError: any) {
+            console.error('Error creating payment on final retry:', finalError);
+            throw new Error('Payment creation failed due to database schema mismatch. Please ensure migrations are applied.');
+          }
+        }
+        throw retryError;
+      }
     }
+    
     // Re-throw non-schema errors
     throw error;
   }

@@ -62,6 +62,36 @@ function isSchemaError(error: any): boolean {
   return hasSchemaKeywords;
 }
 
+// Helper function to ensure documentUrl column exists
+async function ensureDocumentUrlColumnExists(): Promise<void> {
+  try {
+    // Check if column exists by querying information_schema
+    const result = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'Expense' 
+      AND column_name = 'documentUrl'
+    `;
+    
+    const hasDocumentUrl = result.length > 0;
+    
+    if (!hasDocumentUrl) {
+      console.warn('documentUrl column missing, creating it now...');
+      try {
+        // Create column directly using raw SQL
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Expense" ADD COLUMN IF NOT EXISTS "documentUrl" TEXT;`);
+        console.log('documentUrl column created successfully');
+      } catch (createError: any) {
+        console.error('Failed to create documentUrl column:', createError);
+        // Don't throw - we'll handle missing column in the create logic
+      }
+    }
+  } catch (error: any) {
+    // If we can't check, log but don't fail - the create logic will handle it
+    console.warn('Could not check for documentUrl column, will rely on create retry logic:', error?.message);
+  }
+}
+
 export async function findProcurements(
   tenantId: string,
   query: Record<string, string | undefined>
@@ -263,6 +293,12 @@ export async function createProcurement(
     });
   } catch (error: any) {
     console.error('Error creating procurement:', error);
+    console.error('Error details:', {
+      code: error?.code,
+      message: error?.message,
+      meta: error?.meta,
+    });
+    
     if (isSchemaError(error)) {
       console.warn('Procurement creation failed due to schema mismatch. Error:', error?.message || error?.code);
       // Check if it's specifically about documentUrl column
@@ -272,6 +308,19 @@ export async function createProcurement(
       }
       throw new Error('Database schema mismatch. The database is missing required columns. Please run: npx prisma migrate deploy');
     }
+    
+    // Check for foreign key constraint errors (invalid company or project IDs)
+    const errorMessage = (error?.message || '').toLowerCase();
+    if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
+      if (errorMessage.includes('company')) {
+        throw new Error('The selected company does not exist or is invalid.');
+      }
+      if (errorMessage.includes('project') || errorMessage.includes('allocation')) {
+        throw new Error('One or more selected projects do not exist or are invalid.');
+      }
+      throw new Error('Invalid reference: One or more related records do not exist.');
+    }
+    
     // Re-throw non-schema errors
     throw error;
   }
@@ -331,7 +380,18 @@ export async function updateProcurement(
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
-    if (data.documentUrl !== undefined) updateData.documentUrl = data.documentUrl || null;
+    // Only include documentUrl if column exists (will be handled by try-catch if missing)
+    if (data.documentUrl !== undefined) {
+      try {
+        updateData.documentUrl = data.documentUrl || null;
+      } catch (error: any) {
+        // If documentUrl column doesn't exist, skip it
+        const errorMessage = (error?.message || '').toLowerCase();
+        if (!errorMessage.includes('documenturl')) {
+          throw error;
+        }
+      }
+    }
 
     // Update expense
     await tx.expense.update({

@@ -70,13 +70,17 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
     const tenantId = req.tenantId!;
     const projectId = req.query.projectId as string | undefined;
 
+    // Initialize response data
+    const entries: ProjectFinancialEntry[] = [];
+    let projectsMap: Map<string, { id: string; name: string }> = new Map();
+
     // Get all expenses with allocations
     // Only include expenses that have at least one allocation
     let expenses: any[] = [];
-    let projectsMap: Map<string, { id: string; name: string }> = new Map();
     
     try {
       // First, fetch expenses with minimal relations to avoid schema validation issues
+      // Use explicit select to avoid Prisma validating documentUrl column
       expenses = await prisma.expense.findMany({
         where: {
           tenantId,
@@ -86,7 +90,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
               : { some: {} }), // If no projectId, still only get expenses with allocations
           },
         },
-        include: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          date: true,
+          totalAmount: true,
           company: {
             select: {
               name: true,
@@ -174,9 +182,16 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
             },
           },
         },
-        include: {
+        select: {
+          id: true,
+          amount: true,
+          paymentDate: true,
+          referenceNumber: true,
           expense: {
-            include: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              totalAmount: true,
               company: {
                 select: {
                   name: true,
@@ -260,7 +275,11 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
         where: {
           tenantId,
         },
-        include: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          date: true,
+          totalAmount: true,
           company: {
             select: {
               name: true,
@@ -279,8 +298,7 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
       }
     }
 
-    // Build entries array
-    const entries: ProjectFinancialEntry[] = [];
+    // Build entries array (already initialized above)
 
     // Add expense entries (one per allocation)
     expenses.forEach((expense) => {
@@ -399,11 +417,24 @@ export async function getProjectFinancialEntries(req: Request, res: Response, ne
 
     const summary = Array.from(summaryMap.values());
 
-    res.json({
+    // Always return a response, even if empty
+    return res.json({
       entries,
       summary,
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    console.error('Error in getProjectFinancialEntries:', error);
+    
+    // If it's a schema error, return empty data instead of failing
+    if (isSchemaError(error)) {
+      console.warn('Project financial entries query failed due to schema mismatch. Returning empty data. Error:', error?.message || error?.code);
+      return res.json({
+        entries: [],
+        summary: [],
+      });
+    }
+    
+    // For other errors, pass to error handler
+    return next(error);
   }
 }

@@ -259,8 +259,22 @@ export async function createProcurement(
       },
     });
 
-    return expenseWithRelations as ExpenseWithRelations;
-  });
+      return expenseWithRelations as ExpenseWithRelations;
+    });
+  } catch (error: any) {
+    console.error('Error creating procurement:', error);
+    if (isSchemaError(error)) {
+      console.warn('Procurement creation failed due to schema mismatch. Error:', error?.message || error?.code);
+      // Check if it's specifically about documentUrl column
+      const errorMessage = (error?.message || '').toLowerCase();
+      if (errorMessage.includes('documenturl')) {
+        throw new Error('Database schema mismatch: The documentUrl column is missing. Please run: npx prisma migrate deploy');
+      }
+      throw new Error('Database schema mismatch. The database is missing required columns. Please run: npx prisma migrate deploy');
+    }
+    // Re-throw non-schema errors
+    throw error;
+  }
 }
 
 export async function updateProcurement(

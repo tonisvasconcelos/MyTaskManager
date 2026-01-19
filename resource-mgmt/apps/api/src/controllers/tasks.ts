@@ -73,6 +73,7 @@ export async function createTask(req: Request, res: Response, next: NextFunction
       description: data.description || null,
       status: data.status || 'Backlog',
       priority: data.priority || 'Medium',
+      billable: data.billable || 'Billable', // Add billable field
     };
     
     // Handle estimatedEffortHours - convert string to number if needed

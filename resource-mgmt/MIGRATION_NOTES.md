@@ -10,21 +10,37 @@ A new `billable` field has been added to the `Task` model in Prisma schema to tr
 
 ### Migration Steps
 
-1. **Run Prisma migration:**
+**IMPORTANT: The database migrations MUST be run on your production server to fix the 500 errors.**
+
+1. **Create migration files (run locally first):**
    ```bash
    cd resource-mgmt/apps/api
-   npx prisma migrate dev --name add_user_language
+   npx prisma migrate dev --name add_user_language_and_task_billable
    ```
+   This will create migration files in `prisma/migrations/` directory.
 
-2. **Or generate migration without applying:**
-   ```bash
-   npx prisma migrate dev --create-only --name add_user_language
-   ```
+2. **Commit and push the migration files to your repository**
 
-3. **For production, apply the migration:**
+3. **Apply migrations to production (Railway):**
+   
+   **Option A: Via Railway CLI (Recommended)**
    ```bash
-   npx prisma migrate deploy
+   railway login
+   railway link
+   cd resource-mgmt/apps/api
+   railway run npx prisma migrate deploy
    ```
+   
+   **Option B: Via Railway Dashboard**
+   - Go to your Railway project
+   - Open your API service
+   - Go to "Deployments" or use the "Shell" option
+   - Run: `cd resource-mgmt/apps/api && npx prisma migrate deploy`
+   
+   **Option C: The start script should run migrations automatically**
+   - The `package.json` start script includes `npx prisma migrate deploy`
+   - If Railway is using the start script, migrations should run automatically on deployment
+   - However, if migrations haven't been created yet, you need to create them first (step 1)
 
 ### Schema Changes
 

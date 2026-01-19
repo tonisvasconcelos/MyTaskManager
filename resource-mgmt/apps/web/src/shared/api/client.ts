@@ -85,6 +85,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
     // If we have error data, use it
     if (errorData?.error) {
+      // Special handling for DATABASE_SCHEMA_ERROR
+      if (errorData.error.code === 'DATABASE_SCHEMA_ERROR') {
+        console.error('Database schema error detected:', errorData.error)
+        throw new ApiClientError(
+          errorData.error.code,
+          errorData.error.message || 'Database schema mismatch. Please contact support.',
+          errorData.error.details
+        )
+      }
+      
       throw new ApiClientError(
         errorData.error.code || `HTTP_${response.status}`,
         errorData.error.message || `HTTP ${response.status}: ${response.statusText}`,

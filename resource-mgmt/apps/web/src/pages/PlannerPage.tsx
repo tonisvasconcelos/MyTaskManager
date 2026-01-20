@@ -16,6 +16,7 @@ const START_HOUR = 6
 const END_HOUR = 22
 const HOUR_HEIGHT = 60 // pixels per hour
 const SNAP_INTERVAL = 15 // minutes
+const HEADER_HEIGHT = 60 // px (must match WeekGrid header height)
 
 export function PlannerPage() {
   const { t } = useTranslation()
@@ -33,6 +34,7 @@ export function PlannerPage() {
   const [draggingBlock, setDraggingBlock] = useState<WorkBlock | null>(null)
   const [resizingBlock, setResizingBlock] = useState<{ block: WorkBlock; side: 'top' | 'bottom' } | null>(null)
   const dragStartPos = useRef<{ x: number; y: number; startTime: Date } | null>(null)
+  const [previewOverrides, setPreviewOverrides] = useState<Record<string, { startAt: string; endAt: string }>>({})
 
   // Get user role from token (simple decode without library)
   const token = getUserToken()
@@ -63,6 +65,12 @@ export function PlannerPage() {
   const createMutation = useCreatePlannerBlock()
   const updateMutation = useUpdatePlannerBlock()
   const deleteMutation = useDeletePlannerBlock()
+
+  const timeZones = [
+    { label: 'Local', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    { label: 'BR', timeZone: 'America/Sao_Paulo' },
+  ]
+  const timeGutterWidth = timeZones.length * 50 + 20 // keep in sync with WeekGrid gutter width
 
   const handleNewBlock = () => {
     setSelectedBlock(null)
@@ -100,21 +108,50 @@ export function PlannerPage() {
     await deleteMutation.mutateAsync(id)
   }
 
-  // Resize functionality
-  const handleResizeMove = useCallback(
-    (_e: PointerEvent) => {
-      // Track resize movement (will apply on end)
+  const computeDragTarget = useCallback(
+    (clientX: number, clientY: number, block: WorkBlock) => {
+      const gridElement = document.querySelector('[data-week-grid]') as HTMLElement | null
+      if (!gridElement) return null
+
+      const rect = gridElement.getBoundingClientRect()
+      const x = clientX - rect.left
+      const y = clientY - rect.top
+
+      const weekColumnsWidth = rect.width - timeGutterWidth
+      const dayWidth = weekColumnsWidth / 7
+      const dayIndex = Math.max(0, Math.min(6, Math.floor((x - timeGutterWidth) / dayWidth)))
+
+      const startOfWeek = getWeekRange(currentWeek).start
+      const targetDay = new Date(startOfWeek.getTime() + dayIndex * 24 * 60 * 60 * 1000)
+
+      const gridMinutes = (END_HOUR - START_HOUR) * 60
+      const clampedY = Math.max(0, Math.min((END_HOUR - START_HOUR) * HOUR_HEIGHT, y - HEADER_HEIGHT))
+      const rawMinutesFromStart = (clampedY / HOUR_HEIGHT) * 60
+      const snappedMinutesFromStart = Math.round(rawMinutesFromStart / SNAP_INTERVAL) * SNAP_INTERVAL
+
+      const originalStart = new Date(block.startAt)
+      const originalEnd = new Date(block.endAt)
+      const durationMinutes = Math.max(SNAP_INTERVAL, Math.round((originalEnd.getTime() - originalStart.getTime()) / 60000))
+
+      const maxStartMinutes = Math.max(0, gridMinutes - durationMinutes)
+      const boundedStartMinutes = Math.max(0, Math.min(maxStartMinutes, snappedMinutesFromStart))
+
+      const targetHours = Math.floor(boundedStartMinutes / 60)
+      const targetMins = boundedStartMinutes % 60
+
+      const newStart = new Date(targetDay)
+      newStart.setHours(START_HOUR + targetHours, targetMins, 0, 0)
+      const newEnd = new Date(newStart.getTime() + durationMinutes * 60 * 1000)
+
+      return { newStart, newEnd }
     },
-    []
+    [currentWeek, timeGutterWidth]
   )
 
-  const handleResizeEnd = useCallback(
-    async (e: PointerEvent) => {
-      if (!resizingBlock || !dragStartPos.current) {
-        setResizingBlock(null)
-        dragStartPos.current = null
-        return
-      }
+  // Resize functionality
+  const handleResizeMove = useCallback(
+    (e: PointerEvent) => {
+      if (!resizingBlock || !dragStartPos.current) return
 
       const deltaY = e.clientY - dragStartPos.current.y
       const deltaMinutes = Math.round((deltaY / HOUR_HEIGHT) * 60)
@@ -138,6 +175,26 @@ export function PlannerPage() {
         }
       }
 
+      setPreviewOverrides((prev) => ({
+        ...prev,
+        [resizingBlock.block.id]: { startAt: newStart.toISOString(), endAt: newEnd.toISOString() },
+      }))
+    },
+    [resizingBlock]
+  )
+
+  const handleResizeEnd = useCallback(
+    async (_e: PointerEvent) => {
+      if (!resizingBlock || !dragStartPos.current) {
+        setResizingBlock(null)
+        dragStartPos.current = null
+        return
+      }
+
+      const preview = previewOverrides[resizingBlock.block.id]
+      const newStart = preview ? new Date(preview.startAt) : new Date(resizingBlock.block.startAt)
+      const newEnd = preview ? new Date(preview.endAt) : new Date(resizingBlock.block.endAt)
+
       await updateMutation.mutateAsync({
         id: resizingBlock.block.id,
         startAt: newStart.toISOString(),
@@ -146,8 +203,13 @@ export function PlannerPage() {
 
       setResizingBlock(null)
       dragStartPos.current = null
+      setPreviewOverrides((prev) => {
+        const next = { ...prev }
+        delete next[resizingBlock.block.id]
+        return next
+      })
     },
-    [resizingBlock, updateMutation]
+    [previewOverrides, resizingBlock, updateMutation]
   )
 
   // Drag functionality
@@ -164,10 +226,16 @@ export function PlannerPage() {
   }, [])
 
   const handlePointerMove = useCallback(
-    (_e: PointerEvent) => {
-      // Track drag movement (will apply on end)
+    (e: PointerEvent) => {
+      if (!draggingBlock) return
+      const target = computeDragTarget(e.clientX, e.clientY, draggingBlock)
+      if (!target) return
+      setPreviewOverrides((prev) => ({
+        ...prev,
+        [draggingBlock.id]: { startAt: target.newStart.toISOString(), endAt: target.newEnd.toISOString() },
+      }))
     },
-    []
+    [computeDragTarget, draggingBlock]
   )
 
   const handlePointerUp = useCallback(
@@ -178,60 +246,33 @@ export function PlannerPage() {
         return
       }
 
-      // Calculate new position
-      const gridElement = document.querySelector('[data-week-grid]')
-      if (!gridElement) {
+      const preview = previewOverrides[draggingBlock.id]
+      const target = preview
+        ? { newStart: new Date(preview.startAt), newEnd: new Date(preview.endAt) }
+        : computeDragTarget(e.clientX, e.clientY, draggingBlock)
+
+      if (!target) {
         setDraggingBlock(null)
         dragStartPos.current = null
         return
       }
 
-      const rect = gridElement.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-
-      // Account for time gutter width (dynamic based on timezones: 2 timezones * 50px + 20px padding)
-      const timeGutterWidth = 120
-      const weekColumnsWidth = rect.width - timeGutterWidth
-      const dayWidth = weekColumnsWidth / 7
-      const dayIndex = Math.max(0, Math.min(6, Math.floor((x - timeGutterWidth) / dayWidth)))
-      
-      const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const start = getWeekRange(currentWeek).start
-        return new Date(start.getTime() + i * 24 * 60 * 60 * 1000)
-      })
-      const targetDay = weekDays[dayIndex]
-
-      // Calculate time offset (account for header height ~60px)
-      const headerHeight = 60
-      const relativeY = y - headerHeight
-      const hoursFromStart = relativeY / HOUR_HEIGHT
-      const totalMinutes = hoursFromStart * 60
-      const snappedTotalMinutes = Math.round(totalMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
-      const targetHours = Math.floor(snappedTotalMinutes / 60)
-      const targetMins = snappedTotalMinutes % 60
-
-      const originalStart = new Date(draggingBlock.startAt)
-      const originalEnd = new Date(draggingBlock.endAt)
-      const duration = originalEnd.getTime() - originalStart.getTime()
-
-      // Calculate new start time on target day
-      const targetDate = new Date(targetDay)
-      targetDate.setHours(START_HOUR + targetHours, targetMins, 0, 0)
-      const newStart = roundToInterval(targetDate, SNAP_INTERVAL)
-      const newEnd = new Date(newStart.getTime() + duration)
-
       // Update block
       await updateMutation.mutateAsync({
         id: draggingBlock.id,
-        startAt: newStart.toISOString(),
-        endAt: newEnd.toISOString(),
+        startAt: target.newStart.toISOString(),
+        endAt: target.newEnd.toISOString(),
       })
 
       setDraggingBlock(null)
       dragStartPos.current = null
+      setPreviewOverrides((prev) => {
+        const next = { ...prev }
+        delete next[draggingBlock.id]
+        return next
+      })
     },
-    [draggingBlock, currentWeek, updateMutation]
+    [computeDragTarget, draggingBlock, previewOverrides, updateMutation]
   )
 
   // Resize functionality
@@ -274,6 +315,8 @@ export function PlannerPage() {
     }
   }, [draggingBlock, resizingBlock, handlePointerMove, handlePointerUp, handleResizeMove, handleResizeEnd])
 
+  const displayBlocks = blocks.map((b) => (previewOverrides[b.id] ? { ...b, ...previewOverrides[b.id] } : b))
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-text-primary mb-6 md:mb-8">{t('planner.title')}</h1>
@@ -298,20 +341,21 @@ export function PlannerPage() {
       />
 
       <Card>
-        <div data-week-grid className="relative">
+        <div data-week-grid data-header-height={HEADER_HEIGHT} data-gutter-width={timeGutterWidth} className="relative">
           {blocksLoading ? (
             <Skeleton className="h-96" />
-          ) : blocks.length === 0 ? (
+          ) : displayBlocks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-text-secondary mb-4">{t('planner.emptyState')}</p>
             </div>
           ) : (
             <WeekGrid
               currentWeek={currentWeek}
-              blocks={blocks}
+              blocks={displayBlocks}
               startHour={START_HOUR}
               endHour={END_HOUR}
               hourHeight={HOUR_HEIGHT}
+              timeZones={timeZones}
               onBlockClick={handleBlockClick}
               onBlockDragStart={handleDragStart}
               onBlockResizeStart={handleResizeStart}

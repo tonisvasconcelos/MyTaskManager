@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
 import { formatDateRange, getWeekRange } from './utils/date'
-import type { WorkBlockStatus, WorkBlockType } from '../../shared/types/api'
 
 interface PlannerToolbarProps {
   currentWeek: Date

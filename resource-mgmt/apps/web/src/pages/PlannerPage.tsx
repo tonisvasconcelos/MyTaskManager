@@ -100,6 +100,56 @@ export function PlannerPage() {
     await deleteMutation.mutateAsync(id)
   }
 
+  // Resize functionality
+  const handleResizeMove = useCallback(
+    (_e: PointerEvent) => {
+      // Track resize movement (will apply on end)
+    },
+    []
+  )
+
+  const handleResizeEnd = useCallback(
+    async (e: PointerEvent) => {
+      if (!resizingBlock || !dragStartPos.current) {
+        setResizingBlock(null)
+        dragStartPos.current = null
+        return
+      }
+
+      const deltaY = e.clientY - dragStartPos.current.y
+      const deltaMinutes = Math.round((deltaY / HOUR_HEIGHT) * 60)
+      const snappedMinutes = Math.round(deltaMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
+
+      const originalStart = new Date(resizingBlock.block.startAt)
+      const originalEnd = new Date(resizingBlock.block.endAt)
+
+      let newStart = originalStart
+      let newEnd = originalEnd
+
+      if (resizingBlock.side === 'top') {
+        newStart = roundToInterval(addMinutes(originalStart, snappedMinutes), SNAP_INTERVAL)
+        if (newStart >= originalEnd) {
+          newStart = addMinutes(originalEnd, -SNAP_INTERVAL)
+        }
+      } else {
+        newEnd = roundToInterval(addMinutes(originalEnd, snappedMinutes), SNAP_INTERVAL)
+        if (newEnd <= originalStart) {
+          newEnd = addMinutes(originalStart, SNAP_INTERVAL)
+        }
+      }
+
+      await updateMutation.mutateAsync({
+        id: resizingBlock.block.id,
+        startAt: newStart.toISOString(),
+        endAt: newEnd.toISOString(),
+      })
+
+      setResizingBlock(null)
+      dragStartPos.current = null
+    },
+    [resizingBlock, updateMutation]
+  )
+
   // Drag functionality
   const handleDragStart = useCallback((block: WorkBlock, e: React.PointerEvent) => {
     e.stopPropagation()
@@ -114,17 +164,10 @@ export function PlannerPage() {
   }, [])
 
   const handlePointerMove = useCallback(
-    (e: PointerEvent) => {
-      if (!draggingBlock || !dragStartPos.current) return
-
-      const deltaY = e.clientY - dragStartPos.current.y
-      const deltaMinutes = Math.round((deltaY / HOUR_HEIGHT) * 60)
-      const snappedMinutes = Math.round(deltaMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
-
-      // Calculate new start time (will be applied on drag end)
-      // For now, just track the delta
+    (_e: PointerEvent) => {
+      // Track drag movement (will apply on end)
     },
-    [draggingBlock]
+    []
   )
 
   const handlePointerUp = useCallback(
@@ -164,9 +207,9 @@ export function PlannerPage() {
       const relativeY = y - headerHeight
       const hoursFromStart = relativeY / HOUR_HEIGHT
       const totalMinutes = hoursFromStart * 60
-      const snappedMinutes = Math.round(totalMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
-      const targetHours = Math.floor(snappedMinutes / 60)
-      const targetMins = snappedMinutes % 60
+      const snappedTotalMinutes = Math.round(totalMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
+      const targetHours = Math.floor(snappedTotalMinutes / 60)
+      const targetMins = snappedTotalMinutes % 60
 
       const originalStart = new Date(draggingBlock.startAt)
       const originalEnd = new Date(draggingBlock.endAt)
@@ -230,55 +273,6 @@ export function PlannerPage() {
       document.removeEventListener('pointerup', handleUp)
     }
   }, [draggingBlock, resizingBlock, handlePointerMove, handlePointerUp, handleResizeMove, handleResizeEnd])
-
-  const handleResizeMove = useCallback(
-    (e: PointerEvent) => {
-      // Track resize movement (will apply on end)
-    },
-    []
-  )
-
-  const handleResizeEnd = useCallback(
-    async (e: PointerEvent) => {
-      if (!resizingBlock || !dragStartPos.current) {
-        setResizingBlock(null)
-        dragStartPos.current = null
-        return
-      }
-
-      const deltaY = e.clientY - dragStartPos.current.y
-      const deltaMinutes = Math.round((deltaY / HOUR_HEIGHT) * 60)
-      const snappedMinutes = Math.round(deltaMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
-
-      const originalStart = new Date(resizingBlock.block.startAt)
-      const originalEnd = new Date(resizingBlock.block.endAt)
-
-      let newStart = originalStart
-      let newEnd = originalEnd
-
-      if (resizingBlock.side === 'top') {
-        newStart = roundToInterval(addMinutes(originalStart, snappedMinutes), SNAP_INTERVAL)
-        if (newStart >= originalEnd) {
-          newStart = addMinutes(originalEnd, -SNAP_INTERVAL)
-        }
-      } else {
-        newEnd = roundToInterval(addMinutes(originalEnd, snappedMinutes), SNAP_INTERVAL)
-        if (newEnd <= originalStart) {
-          newEnd = addMinutes(originalStart, SNAP_INTERVAL)
-        }
-      }
-
-      await updateMutation.mutateAsync({
-        id: resizingBlock.block.id,
-        startAt: newStart.toISOString(),
-        endAt: newEnd.toISOString(),
-      })
-
-      setResizingBlock(null)
-      dragStartPos.current = null
-    },
-    [resizingBlock, updateMutation]
-  )
 
   return (
     <div>

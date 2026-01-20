@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { WorkBlockCard } from './WorkBlockCard'
 import { computeLanes } from './utils/layout'
-import { getTimePosition, getBlockHeight, createDateTime, roundToInterval } from './utils/date'
+import { getTimePosition, getBlockHeight, createDateTime } from './utils/date'
 import type { WorkBlock } from '../../shared/types/api'
 
 interface DayColumnProps {

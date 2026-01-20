@@ -1,4 +1,3 @@
-import { format } from 'date-fns'
 import { DayColumn } from './DayColumn'
 import { getWeekDays } from './utils/date'
 import type { WorkBlock } from '../../shared/types/api'

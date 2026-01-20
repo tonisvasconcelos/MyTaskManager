@@ -121,13 +121,13 @@ export async function createBlock(
     taskId?: string | null;
   }
 ): Promise<WorkBlock> {
-  const { projectId, taskId, ...restData } = data;
+  const { projectId, taskId, userId, ...restData } = data;
 
   return prisma.workBlock.create({
     data: {
       ...restData,
       tenant: { connect: { id: tenantId } },
-      user: { connect: { id: data.userId } },
+      user: { connect: { id: userId } },
       ...(projectId && { project: { connect: { id: projectId } } }),
       ...(taskId && { task: { connect: { id: taskId } } }),
     },

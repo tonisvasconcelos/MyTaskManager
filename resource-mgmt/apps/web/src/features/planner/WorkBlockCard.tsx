@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '../../components/ui/Badge'
 import type { WorkBlock } from '../../shared/types/api'
 import { formatTime } from './utils/date'
-import { parseISO } from 'date-fns'
 
 interface WorkBlockCardProps {
   block: WorkBlock

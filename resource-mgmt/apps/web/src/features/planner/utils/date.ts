@@ -1,4 +1,4 @@
-import { startOfWeek, addDays, format, parseISO, getDay, setHours, setMinutes, addMinutes, roundToNearestMinutes } from 'date-fns'
+import { startOfWeek, addDays, format, parseISO, getDay, addMinutes, roundToNearestMinutes } from 'date-fns'
 
 const WEEK_START_DAY = 1 // Monday
 
@@ -31,8 +31,13 @@ export function getWeekDays(date: Date = new Date()): Date[] {
  * Round a date to the nearest interval (e.g., 15 minutes)
  */
 export function roundToInterval(date: Date, minutes: number = 15): Date {
-  return roundToNearestMinutes(date, { nearestTo: minutes })
+  return roundToNearestMinutes(date, { nearestTo: minutes as any })
 }
+
+/**
+ * Add minutes to a date
+ */
+export { addMinutes }
 
 /**
  * Format time as HH:MM
@@ -61,7 +66,7 @@ export function formatDateRange(start: Date, end: Date): string {
 export function getTimePosition(
   time: Date | string,
   startHour: number,
-  endHour: number,
+  _endHour: number,
   hourHeight: number
 ): number {
   const date = typeof time === 'string' ? parseISO(time) : time

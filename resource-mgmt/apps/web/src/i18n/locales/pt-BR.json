@@ -33,9 +33,10 @@
   "dashboard": {
     "title": "Painel",
     "activeProjects": "Projetos Ativos",
+    "tasks": "Tarefas",
     "ongoingTasks": "Tarefas em Andamento",
     "hoursThisWeek": "Horas Esta Semana",
-    "viewAll": "Ver todos"
+    "viewAll": "Ver todas"
   },
   "login": {
     "title": "Sistema de Gerenciamento de Projetos de TI",

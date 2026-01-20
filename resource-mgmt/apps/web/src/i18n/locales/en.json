@@ -117,7 +117,22 @@
     "noContributors": "No Contributor users found",
     "savePermissions": "Save Permissions",
     "permissionsSaved": "Permissions saved successfully",
-    "permissionsError": "Error saving permissions"
+    "permissionsError": "Error saving permissions",
+    "kanbanView": "Kanban View",
+    "listView": "List View",
+    "searchTasks": "Search tasks...",
+    "filterByStatus": "Filter by Status",
+    "filterByPriority": "Filter by Priority",
+    "sortBy": "Sort by",
+    "sortOrder": "Order",
+    "sortAscending": "Ascending",
+    "sortDescending": "Descending",
+    "dueDate": "Due Date",
+    "createdDate": "Created Date",
+    "task": "Task",
+    "actions": "Actions",
+    "noTasksFound": "No tasks found",
+    "changeStatus": "Change status"
   },
   "tasks": {
     "title": "Title",

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../shared/api/tasks'
@@ -15,6 +15,7 @@ import { Modal } from '../components/ui/Modal'
 import { Badge } from '../components/ui/Badge'
 import { Skeleton } from '../components/ui/Skeleton'
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal'
+import { TasksListView } from '../components/tasks/TasksListView'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -67,9 +68,18 @@ export function ProjectDetailPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet' | 'expenses' | 'users'>('tasks')
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>(() => {
+    const saved = localStorage.getItem('projectTasksViewMode')
+    return (saved === 'kanban' || saved === 'list') ? saved : 'kanban'
+  })
   const { data: meData } = useMe()
   const currentUserRole = meData?.user?.role
   const isAdmin = currentUserRole === 'Admin' || currentUserRole === 'Manager'
+  
+  // Persist view mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('projectTasksViewMode', viewMode)
+  }, [viewMode])
   
   // Project users permissions
   const { data: projectUsers, isLoading: projectUsersLoading } = useProjectUsers(id || '')
@@ -248,11 +258,38 @@ export function ProjectDetailPage() {
 
       {activeTab === 'tasks' && (
         <>
-          <div className="mb-4">
+          <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             <Button onClick={openCreateModal}>{t('projectDetail.createTask')}</Button>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'kanban' ? 'primary' : 'secondary'}
+                onClick={() => setViewMode('kanban')}
+                size="sm"
+                aria-label={t('projectDetail.kanbanView')}
+              >
+                {t('projectDetail.kanbanView')}
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'secondary'}
+                onClick={() => setViewMode('list')}
+                size="sm"
+                aria-label={t('projectDetail.listView')}
+              >
+                {t('projectDetail.listView')}
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {viewMode === 'list' && id ? (
+            <TasksListView
+              projectId={id}
+              onTaskClick={openTaskDetail}
+              onStatusChange={handleStatusChange}
+              canEdit={true}
+              canDelete={isAdmin}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statusColumns.map((column) => (
               <div key={column.status} className="flex flex-col">
                 <div className="mb-3">
@@ -324,6 +361,7 @@ export function ProjectDetailPage() {
               </div>
             ))}
           </div>
+          )}
         </>
       )}
 

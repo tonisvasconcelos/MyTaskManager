@@ -8,6 +8,9 @@ export function useTasks(
     projectId?: string
     status?: string
     assigneeId?: string
+    priority?: string
+    sortBy?: 'dueDate' | 'priority' | 'createdAt' | 'title'
+    sortOrder?: 'asc' | 'desc'
   }
 ) {
   return useQuery({

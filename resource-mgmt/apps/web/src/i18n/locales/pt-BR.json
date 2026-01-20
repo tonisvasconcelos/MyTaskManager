@@ -117,7 +117,22 @@
     "noContributors": "Nenhum usuário Contribuidor encontrado",
     "savePermissions": "Salvar Permissões",
     "permissionsSaved": "Permissões salvas com sucesso",
-    "permissionsError": "Erro ao salvar permissões"
+    "permissionsError": "Erro ao salvar permissões",
+    "kanbanView": "Visualização Kanban",
+    "listView": "Visualização em Lista",
+    "searchTasks": "Buscar tarefas...",
+    "filterByStatus": "Filtrar por Status",
+    "filterByPriority": "Filtrar por Prioridade",
+    "sortBy": "Ordenar por",
+    "sortOrder": "Ordem",
+    "sortAscending": "Crescente",
+    "sortDescending": "Decrescente",
+    "dueDate": "Data de Vencimento",
+    "createdDate": "Data de Criação",
+    "task": "Tarefa",
+    "actions": "Ações",
+    "noTasksFound": "Nenhuma tarefa encontrada",
+    "changeStatus": "Alterar status"
   },
   "tasks": {
     "title": "Título",

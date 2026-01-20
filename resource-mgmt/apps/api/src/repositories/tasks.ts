@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { parsePagination } from '../lib/pagination.js';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus, TaskPriority } from '@prisma/client';
 import type { Task, Prisma } from '@prisma/client';
 
 export async function findTasks(
@@ -12,6 +12,9 @@ export async function findTasks(
   const projectId = query.projectId;
   const status = query.status as TaskStatus | undefined;
   const assigneeId = query.assigneeId;
+  const priority = query.priority as TaskPriority | undefined;
+  const sortBy = query.sortBy || 'createdAt';
+  const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
   const where: Prisma.TaskWhereInput = {
     tenantId,
@@ -19,12 +22,24 @@ export async function findTasks(
       OR: [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
+        { labels: { hasSome: [search] } },
       ],
     }),
     ...(projectId && { projectId }),
     ...(status && { status }),
     ...(assigneeId && { assigneeId }),
+    ...(priority && { priority }),
   };
+
+  // Dynamic sorting based on sortBy parameter
+  const orderBy: Prisma.TaskOrderByWithRelationInput =
+    sortBy === 'dueDate'
+      ? { estimatedEndDate: sortOrder }
+      : sortBy === 'priority'
+        ? { priority: sortOrder }
+        : sortBy === 'title'
+          ? { title: sortOrder }
+          : { createdAt: sortOrder };
 
   try {
     const [data, total] = await Promise.all([
@@ -55,7 +70,7 @@ export async function findTasks(
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     }),
     prisma.task.count({ where }),
   ]);

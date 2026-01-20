@@ -73,7 +73,7 @@ export async function createProcurement(req: Request, res: Response, next: NextF
         
         // If user is Contributor, check if they have access to this project
         if (role === 'Contributor') {
-          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId);
+          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId as string);
           if (!hasAccess) {
             throw new ValidationError(`You do not have access to project ${projectId}`);
           }
@@ -155,7 +155,7 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
         
         // If user is Contributor, check if they have access to this project
         if (role === 'Contributor') {
-          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId);
+          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId as string);
           if (!hasAccess) {
             throw new ValidationError(`You do not have access to project ${projectId}`);
           }

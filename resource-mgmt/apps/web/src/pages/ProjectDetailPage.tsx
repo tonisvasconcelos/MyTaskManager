@@ -568,7 +568,7 @@ export function ProjectDetailPage() {
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input
-            label={`${t('tasks.title')} *`}
+            label={`${t('tasks.titleLabel')} *`}
             {...register('title')}
             error={errors.title?.message}
           />

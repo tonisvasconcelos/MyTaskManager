@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useTasks } from '../../shared/api/tasks'
+import { useNavigate } from 'react-router-dom'
+import { useTasks, useUpdateTask } from '../../shared/api/tasks'
 import { useDebounce } from '../../shared/hooks/useDebounce'
+import { useMe } from '../../shared/api/auth'
 import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { Badge } from '../ui/Badge'
@@ -23,22 +25,13 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'danger' 
   Done: 'success',
 }
 
-interface TasksListViewProps {
-  projectId: string
-  onTaskClick: (task: Task) => void
-  onStatusChange: (taskId: string, status: Task['status']) => Promise<void>
-  canEdit: boolean
-  canDelete: boolean
-}
-
-export function TasksListView({
-  projectId,
-  onTaskClick,
-  onStatusChange,
-  canEdit,
-  canDelete,
-}: TasksListViewProps) {
+export function AllTasksListView() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { data: meData } = useMe()
+  const currentUserRole = meData?.user?.role
+  const isAdmin = currentUserRole === 'Admin' || currentUserRole === 'Manager'
+  
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [priorityFilter, setPriorityFilter] = useState<string>('')
@@ -48,9 +41,9 @@ export function TasksListView({
   const pageSize = 20
 
   const debouncedSearch = useDebounce(search, 500)
+  const updateMutation = useUpdateTask()
 
   const { data, isLoading } = useTasks({
-    projectId,
     search: debouncedSearch || undefined,
     status: statusFilter || undefined,
     priority: priorityFilter || undefined,
@@ -96,10 +89,14 @@ export function TasksListView({
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
-      await onStatusChange(taskId, newStatus)
+      await updateMutation.mutateAsync({ id: taskId, status: newStatus })
     } catch (error) {
       console.error('Error updating task status:', error)
     }
+  }
+
+  const handleTaskClick = (task: Task) => {
+    navigate(`/projects/${task.projectId}`, { state: { taskId: task.id } })
   }
 
   const formatDate = (dateString: string | null) => {
@@ -197,11 +194,14 @@ export function TasksListView({
       ) : (
         <>
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full border-collapse" role="table" aria-label={t('projectDetail.tasks')}>
+            <table className="w-full border-collapse" role="table" aria-label={t('common.tasks')}>
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
                     {t('projectDetail.task')}
+                  </th>
+                  <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
+                    {t('common.projects')}
                   </th>
                   <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
                     {t('tasks.priority')}
@@ -221,11 +221,6 @@ export function TasksListView({
                   <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
                     {t('tasks.assignee')}
                   </th>
-                  {(canEdit || canDelete) && (
-                    <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
-                      {t('projectDetail.actions')}
-                    </th>
-                  )}
                 </tr>
               </thead>
               <tbody>
@@ -233,11 +228,11 @@ export function TasksListView({
                   <tr
                     key={task.id}
                     className="border-b border-border hover:bg-surface/50 transition-colors cursor-pointer"
-                    onClick={() => onTaskClick(task)}
+                    onClick={() => handleTaskClick(task)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
-                        onTaskClick(task)
+                        handleTaskClick(task)
                       }
                     }}
                     tabIndex={0}
@@ -259,6 +254,14 @@ export function TasksListView({
                           <span className="text-sm text-text-secondary mt-1">
                             {truncateText(task.description, 80)}
                           </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-text-primary">{task.project?.name || '—'}</span>
+                        {task.project?.company && (
+                          <span className="text-xs text-text-secondary">{task.project.company.name}</span>
                         )}
                       </div>
                     </td>
@@ -309,25 +312,6 @@ export function TasksListView({
                     <td className="p-3 text-sm text-text-secondary">
                       {task.assignee ? task.assignee.fullName : t('tasks.unassigned')}
                     </td>
-                    {(canEdit || canDelete) && (
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          {canEdit && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onTaskClick(task)
-                              }}
-                              aria-label={`${t('common.edit')} ${task.title}`}
-                            >
-                              {t('common.edit')}
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -340,11 +324,11 @@ export function TasksListView({
               <div
                 key={task.id}
                 className="border border-border rounded-md p-4 bg-surface hover:border-accent/50 transition-colors cursor-pointer"
-                onClick={() => onTaskClick(task)}
+                onClick={() => handleTaskClick(task)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    onTaskClick(task)
+                    handleTaskClick(task)
                   }
                 }}
                 tabIndex={0}
@@ -361,7 +345,13 @@ export function TasksListView({
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-medium text-text-primary flex-1">{task.title}</h3>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-text-primary">{task.title}</h3>
+                      <p className="text-sm text-text-secondary mt-1">
+                        {task.project?.name}
+                        {task.project?.company && ` • ${task.project.company.name}`}
+                      </p>
+                    </div>
                     <Badge variant={priorityColors[task.priority] || 'default'} className="text-xs">
                       {t(`priority.${task.priority}`)}
                     </Badge>
@@ -404,7 +394,7 @@ export function TasksListView({
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={task.status}
                         onChange={(e) => {
@@ -415,19 +405,6 @@ export function TasksListView({
                         className="flex-1 text-xs"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      {canEdit && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onTaskClick(task)
-                          }}
-                          aria-label={`${t('common.edit')} ${task.title}`}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>

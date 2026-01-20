@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "companies": "Companies",
     "projects": "Projects",
+    "tasks": "Tasks",
     "ongoingTasks": "Ongoing Tasks",
     "timesheet": "Timesheet",
     "procurements": "Procurements",
@@ -135,7 +136,9 @@
     "changeStatus": "Change status"
   },
   "tasks": {
-    "title": "Title",
+    "title": "Tasks",
+    "taskTitle": "Title",
+    "titleLabel": "Title",
     "description": "Description",
     "status": "Status",
     "priority": "Priority",
@@ -154,7 +157,15 @@
     "uploadFiles": "Upload file(s)",
     "deleteConfirm": "Are you sure you want to delete this task?",
     "deleteAttachmentConfirm": "Are you sure you want to delete this attachment?",
-    "taskDetails": "Task Details"
+    "taskDetails": "Task Details",
+    "subTasks": "Sub-tasks",
+    "addSubTask": "Add sub-task",
+    "subTaskTitle": "Sub-task title",
+    "subTaskTitlePlaceholder": "Enter sub-task title...",
+    "noSubTasks": "No sub-tasks",
+    "deleteSubTaskConfirm": "Are you sure you want to delete this sub-task?",
+    "completed": "Completed",
+    "incomplete": "Incomplete"
   },
   "ongoingTasks": {
     "title": "Ongoing Tasks",

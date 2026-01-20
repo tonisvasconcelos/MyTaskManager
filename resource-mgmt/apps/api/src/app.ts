@@ -6,6 +6,7 @@ import { companiesRouter } from './routes/companies.js';
 import { projectsRouter } from './routes/projects.js';
 import { usersRouter } from './routes/users.js';
 import { tasksRouter } from './routes/tasks.js';
+import { subTasksRouter } from './routes/subTasks.js';
 import { attachmentsRouter } from './routes/attachments.js';
 import { timesheetRouter } from './routes/timesheet.js';
 import { procurementsRouter } from './routes/procurements.js';
@@ -91,6 +92,7 @@ export function createApp(): Express {
   app.use('/api/projects', projectsRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/tasks', tasksRouter);
+  app.use('/api/subtasks', subTasksRouter);
   app.use('/api', attachmentsRouter);
   app.use('/api', timesheetRouter);
   app.use('/api/procurements', procurementsRouter);

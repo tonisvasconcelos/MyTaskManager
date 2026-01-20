@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTask, useUpdateTask, useDeleteTask } from '../../shared/api/tasks'
 import { useTaskAttachments, useUploadAttachments, useDeleteAttachment } from '../../shared/api/attachments'
+import { useSubTasks, useCreateSubTask, useUpdateSubTask, useDeleteSubTask } from '../../shared/api/subTasks'
 import { useUsers } from '../../shared/api/users'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -54,13 +55,18 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
   const { t } = useTranslation()
   const { data: task, isLoading } = useTask(initialTask.id)
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(initialTask.id)
+  const { data: subTasks, isLoading: subTasksLoading } = useSubTasks(initialTask.id)
   const { data: users } = useUsers()
   const updateMutation = useUpdateTask()
   const deleteMutation = useDeleteTask()
   const uploadMutation = useUploadAttachments()
   const deleteAttachmentMutation = useDeleteAttachment()
+  const createSubTaskMutation = useCreateSubTask()
+  const updateSubTaskMutation = useUpdateSubTask()
+  const deleteSubTaskMutation = useDeleteSubTask()
   const [isEditing, setIsEditing] = useState(false)
   const [filesToUpload, setFilesToUpload] = useState<File[]>([])
+  const [newSubTaskTitle, setNewSubTaskTitle] = useState('')
 
   const currentTask = task || initialTask
 
@@ -148,6 +154,40 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
     }
   }
 
+  const handleAddSubTask = async () => {
+    if (!newSubTaskTitle.trim()) return
+    try {
+      await createSubTaskMutation.mutateAsync({
+        taskId: currentTask.id,
+        title: newSubTaskTitle.trim(),
+      })
+      setNewSubTaskTitle('')
+    } catch (error) {
+      console.error('Error creating sub-task:', error)
+    }
+  }
+
+  const handleToggleSubTask = async (subTaskId: string, completed: boolean) => {
+    try {
+      await updateSubTaskMutation.mutateAsync({
+        id: subTaskId,
+        completed: !completed,
+      })
+    } catch (error) {
+      console.error('Error updating sub-task:', error)
+    }
+  }
+
+  const handleDeleteSubTask = async (subTaskId: string) => {
+    if (confirm(t('tasks.deleteSubTaskConfirm'))) {
+      try {
+        await deleteSubTaskMutation.mutateAsync(subTaskId)
+      } catch (error) {
+        console.error('Error deleting sub-task:', error)
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <Modal isOpen={true} onClose={onClose} title={t('tasks.taskDetails')} size="xl">
@@ -160,7 +200,7 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
     <Modal isOpen={true} onClose={onClose} title={t('tasks.taskDetails')} size="xl">
       {isEditing ? (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label={`${t('tasks.title')} *`} {...register('title')} error={errors.title?.message} />
+          <Input label={`${t('tasks.titleLabel')} *`} {...register('title')} error={errors.title?.message} />
           <Textarea
             label={t('tasks.description')}
             {...register('description')}
@@ -357,6 +397,70 @@ export function TaskDetailModal({ task: initialTask, onClose, onUpdate }: TaskDe
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-text-primary mb-3">{t('tasks.subTasks')}</h3>
+            <div className="mb-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder={t('tasks.subTaskTitlePlaceholder')}
+                  value={newSubTaskTitle}
+                  onChange={(e) => setNewSubTaskTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddSubTask()
+                    }
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleAddSubTask}
+                  disabled={!newSubTaskTitle.trim() || createSubTaskMutation.isPending}
+                >
+                  {t('tasks.addSubTask')}
+                </Button>
+              </div>
+            </div>
+            {subTasksLoading ? (
+              <Skeleton className="h-24" />
+            ) : subTasks && subTasks.length > 0 ? (
+              <div className="space-y-2">
+                {subTasks.map((subTask) => (
+                  <div
+                    key={subTask.id}
+                    className="flex items-center gap-3 p-3 border border-border rounded-md hover:bg-surface/50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={subTask.completed}
+                      onChange={() => handleToggleSubTask(subTask.id, subTask.completed)}
+                      className="w-5 h-5 text-accent border-border rounded focus:ring-accent focus:ring-2 cursor-pointer"
+                      aria-label={`${subTask.completed ? t('tasks.completed') : t('tasks.incomplete')}: ${subTask.title}`}
+                    />
+                    <span
+                      className={`flex-1 text-text-primary ${
+                        subTask.completed ? 'line-through text-text-secondary' : ''
+                      }`}
+                    >
+                      {subTask.title}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSubTask(subTask.id)}
+                      className="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded transition-colors"
+                      aria-label={`${t('common.delete')} ${subTask.title}`}
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-text-secondary text-sm">{t('tasks.noSubTasks')}</p>
+            )}
           </div>
 
           <div>

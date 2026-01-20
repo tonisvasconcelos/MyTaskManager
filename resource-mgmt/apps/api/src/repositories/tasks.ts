@@ -205,6 +205,9 @@ export async function findTaskByIdForTenant(tenantId: string, id: string): Promi
       },
       assignee: true,
       attachments: true,
+      subTasks: {
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      },
       timeEntries: {
         include: {
           user: {

@@ -96,6 +96,17 @@ export interface Task {
     fullName: string
     email: string | null
   }
+  subTasks?: SubTask[]
+}
+
+export interface SubTask {
+  id: string
+  taskId: string
+  title: string
+  completed: boolean
+  order: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface TaskAttachment {

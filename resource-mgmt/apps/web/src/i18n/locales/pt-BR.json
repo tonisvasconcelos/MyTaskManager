@@ -3,6 +3,7 @@
     "dashboard": "Painel",
     "companies": "Empresas",
     "projects": "Projetos",
+    "tasks": "Tarefas",
     "ongoingTasks": "Tarefas em Andamento",
     "timesheet": "Registro de Horas",
     "procurements": "Compras de TI",
@@ -135,7 +136,8 @@
     "changeStatus": "Alterar status"
   },
   "tasks": {
-    "title": "Título",
+    "title": "Tarefas",
+    "titleLabel": "Título",
     "description": "Descrição",
     "status": "Status",
     "priority": "Prioridade",
@@ -154,7 +156,15 @@
     "uploadFiles": "Enviar arquivo(s)",
     "deleteConfirm": "Tem certeza que deseja excluir esta tarefa?",
     "deleteAttachmentConfirm": "Tem certeza que deseja excluir este anexo?",
-    "taskDetails": "Detalhes da Tarefa"
+    "taskDetails": "Detalhes da Tarefa",
+    "subTasks": "Sub-tarefas",
+    "addSubTask": "Adicionar sub-tarefa",
+    "subTaskTitle": "Título da sub-tarefa",
+    "subTaskTitlePlaceholder": "Digite o título da sub-tarefa...",
+    "noSubTasks": "Sem sub-tarefas",
+    "deleteSubTaskConfirm": "Tem certeza que deseja excluir esta sub-tarefa?",
+    "completed": "Concluída",
+    "incomplete": "Incompleta"
   },
   "ongoingTasks": {
     "title": "Tarefas em Andamento",

@@ -70,10 +70,18 @@ export function AppRoutes() {
         }
       />
       <Route
-        path="/tasks/ongoing"
+        path="/tasks"
         element={
           <ProtectedRoute>
             <OngoingTasksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks/ongoing"
+        element={
+          <ProtectedRoute>
+            <Navigate to="/tasks" replace />
           </ProtectedRoute>
         }
       />

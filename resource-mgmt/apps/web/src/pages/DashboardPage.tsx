@@ -69,7 +69,7 @@ export function DashboardPage() {
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <h2 className="text-xl font-semibold text-text-primary">{t('dashboard.ongoingTasks')}</h2>
-          <Link to="/tasks/ongoing" className="text-accent hover:underline text-sm">
+          <Link to="/tasks" className="text-accent hover:underline text-sm">
             {t('dashboard.viewAll')}
           </Link>
         </div>

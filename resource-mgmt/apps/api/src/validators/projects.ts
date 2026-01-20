@@ -45,3 +45,18 @@ export const deleteProjectSchema = z.object({
     id: z.string().uuid(),
   }),
 });
+
+export const getProjectUsersSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+});
+
+export const updateProjectUsersSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    userIds: z.array(z.string().uuid()).default([]),
+  }),
+});

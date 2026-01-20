@@ -14,6 +14,7 @@
     "edit": "Editar",
     "delete": "Excluir",
     "save": "Salvar",
+    "saving": "Salvando...",
     "cancel": "Cancelar",
     "update": "Atualizar",
     "search": "Buscar",
@@ -101,6 +102,7 @@
     "tasks": "Tarefas",
     "timesheetSummary": "Resumo de Registro de Horas",
     "expenses": "Despesas",
+    "usersPermissions": "Permissões de Usuários",
     "createTask": "Criar Tarefa",
     "backlog": "Backlog",
     "inProgress": "Em Progresso",
@@ -109,7 +111,13 @@
     "noTasks": "Sem tarefas",
     "noExpenses": "Nenhuma despesa alocada para este projeto",
     "totalAllocated": "Total Alocado",
-    "comingSoon": "Resumo de registro de horas em breve..."
+    "comingSoon": "Resumo de registro de horas em breve...",
+    "selectContributors": "Selecione usuários Contribuidores que podem acessar este projeto",
+    "selectContributorsDescription": "Apenas usuários com função de Contribuidor podem receber acesso a projetos. Os usuários selecionados poderão visualizar o projeto, criar e editar tarefas, criar registros de horas e criar despesas.",
+    "noContributors": "Nenhum usuário Contribuidor encontrado",
+    "savePermissions": "Salvar Permissões",
+    "permissionsSaved": "Permissões salvas com sucesso",
+    "permissionsError": "Erro ao salvar permissões"
   },
   "tasks": {
     "title": "Título",

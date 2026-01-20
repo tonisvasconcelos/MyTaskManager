@@ -11,24 +11,24 @@ datasource db {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  slug      String   @unique
-  name      String?
-  planName  String   @default("Starter")
-  maxUsers  Int      @default(5)
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  name        String?
+  planName    String    @default("Starter")
+  maxUsers    Int       @default(5)
   activeUntil DateTime?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  companies Company[]
-  projects  Project[]
-  users     User[]
-  tasks     Task[]
+  companies   Company[]
+  projects    Project[]
+  users       User[]
+  tasks       Task[]
   timeEntries TimeEntry[]
-  expenses  Expense[]
-  payments  Payment[]
-  sales     Sale[]
+  expenses    Expense[]
+  payments    Payment[]
+  sales       Sale[]
 
   @@index([slug])
 }
@@ -85,30 +85,30 @@ enum PaymentStatus {
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  email     String?
-  phone     String?
-  website   String?
-  address   String?
-  notes     String?  @db.Text
-  countryCode String?
+  id                    String       @id @default(uuid())
+  tenantId              String
+  name                  String
+  email                 String?
+  phone                 String?
+  website               String?
+  address               String?
+  notes                 String?      @db.Text
+  countryCode           String?
   invoicingCurrencyCode String?
-  taxRegistrationNo String?
-  billingUnit BillingUnit?
-  unitPrice Decimal? @db.Decimal(10, 2)
-  generalNotes String? @db.Text
-  logoFileName String?
-  logoOriginalName String?
-  logoMimeType String?
-  logoSize Int?
-  logoUrl String?
-  logoData Bytes? // BLOB storage for logo image data
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  taxRegistrationNo     String?
+  billingUnit           BillingUnit?
+  unitPrice             Decimal?     @db.Decimal(10, 2)
+  generalNotes          String?      @db.Text
+  logoFileName          String?
+  logoOriginalName      String?
+  logoMimeType          String?
+  logoSize              Int?
+  logoUrl               String?
+  logoData              Bytes? // BLOB storage for logo image data
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   projects Project[]
   expenses Expense[]
   sales    Sale[]
@@ -119,20 +119,21 @@ model Company {
 
 model Project {
   id            String        @id @default(uuid())
-  tenantId     String
-  companyId    String
-  name         String
-  description  String?       @db.Text
-  status       ProjectStatus @default(Planned)
-  startDate    DateTime?
+  tenantId      String
+  companyId     String
+  name          String
+  description   String?       @db.Text
+  status        ProjectStatus @default(Planned)
+  startDate     DateTime?
   targetEndDate DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  tasks   Task[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks              Task[]
   expenseAllocations ExpenseAllocation[]
+  projectUsers       ProjectUser[]
 
   @@index([tenantId])
   @@index([tenantId, companyId])
@@ -145,42 +146,43 @@ enum UserLanguage {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  tenantId  String
-  fullName  String
-  email     String
+  id           String       @id @default(uuid())
+  tenantId     String
+  fullName     String
+  email        String
   passwordHash String
-  role      UserRole @default(Contributor)
-  language  UserLanguage @default(EN)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role         UserRole     @default(Contributor)
+  language     UserLanguage @default(EN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assignedTasks Task[]
   timeEntries   TimeEntry[]
+  projectUsers  ProjectUser[]
 
-  @@index([tenantId])
   @@unique([tenantId, email])
+  @@index([tenantId])
 }
 
 model Task {
-  id                String       @id @default(uuid())
-  tenantId          String
-  projectId         String
-  title             String
-  description       String?      @db.Text
-  startDate         DateTime?
-  estimatedEndDate  DateTime?
-  estimatedEffortHours Decimal?  @default(0) @db.Decimal(10, 2)
-  status            TaskStatus   @default(Backlog)
-  priority          TaskPriority @default(Medium)
-  billable          TaskBillable @default(Billable)
-  labels            String[]     @default([]) // Tags to identify task area (e.g., #legal, #development)
-  assigneeId        String?
-  refTicket         String?      // Reference ticket from Jira/DevOps
-  refLink           String?       // Link to ticket in external system
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                   String       @id @default(uuid())
+  tenantId             String
+  projectId            String
+  title                String
+  description          String?      @db.Text
+  startDate            DateTime?
+  estimatedEndDate     DateTime?
+  estimatedEffortHours Decimal?     @default(0) @db.Decimal(10, 2)
+  status               TaskStatus   @default(Backlog)
+  priority             TaskPriority @default(Medium)
+  billable             TaskBillable @default(Billable)
+  labels               String[]     @default([]) // Tags to identify task area (e.g., #legal, #development)
+  assigneeId           String?
+  refTicket            String? // Reference ticket from Jira/DevOps
+  refLink              String? // Link to ticket in external system
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -195,14 +197,14 @@ model Task {
 }
 
 model TaskAttachment {
-  id          String   @id @default(uuid())
-  taskId      String
-  fileName    String
+  id           String   @id @default(uuid())
+  taskId       String
+  fileName     String
   originalName String
-  mimeType    String
-  size        Int
-  url         String
-  createdAt   DateTime @default(now())
+  mimeType     String
+  size         Int
+  url          String
+  createdAt    DateTime @default(now())
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
@@ -221,8 +223,8 @@ model TimeEntry {
   updatedAt DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, userId, entryDate])
@@ -230,7 +232,7 @@ model TimeEntry {
 }
 
 model Expense {
-  id                  String         @id @default(uuid())
+  id                  String        @id @default(uuid())
   tenantId            String
   companyId           String
   invoiceNumber       String
@@ -238,47 +240,47 @@ model Expense {
   dueDate             DateTime?
   refStartDate        DateTime?
   refEndDate          DateTime?
-  invoiceCurrencyCode String?        @db.VarChar(3)
-  totalAmount         Decimal        @db.Decimal(10,2)
+  invoiceCurrencyCode String?       @db.VarChar(3)
+  totalAmount         Decimal       @db.Decimal(10, 2)
   paymentMethod       PaymentMethod
-  status              PaymentStatus  @default(PENDING)
-  notes               String?        @db.Text
-  documentUrl         String?        @db.Text
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  status              PaymentStatus @default(PENDING)
+  notes               String?       @db.Text
+  documentUrl         String?       @db.Text
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  allocations   ExpenseAllocation[]
-  payments      Payment[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allocations ExpenseAllocation[]
+  payments    Payment[]
 
+  @@unique([tenantId, companyId, invoiceNumber])
   @@index([tenantId])
   @@index([tenantId, invoiceNumber])
-  @@unique([tenantId, companyId, invoiceNumber])
 }
 
 model ExpenseAllocation {
-  id              String   @id @default(uuid())
-  expenseId       String
-  projectId       String
-  allocatedAmount Decimal? @db.Decimal(10,2)
-  allocatedPercentage Decimal? @db.Decimal(5,2) // Percentage (0-100)
+  id                  String   @id @default(uuid())
+  expenseId           String
+  projectId           String
+  allocatedAmount     Decimal? @db.Decimal(10, 2)
+  allocatedPercentage Decimal? @db.Decimal(5, 2) // Percentage (0-100)
 
-  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([expenseId, projectId])
   @@index([expenseId])
   @@index([projectId])
-  @@unique([expenseId, projectId])
 }
 
 model Payment {
   id                  String        @id @default(uuid())
   tenantId            String
   expenseId           String
-  amount              Decimal       @db.Decimal(10,2)
+  amount              Decimal       @db.Decimal(10, 2)
   paymentCurrencyCode String?       @db.VarChar(3)
-  amountLCY           Decimal?      @db.Decimal(10,2)
+  amountLCY           Decimal?      @db.Decimal(10, 2)
   paymentDate         DateTime
   paymentMethod       PaymentMethod
   referenceNumber     String?
@@ -295,21 +297,36 @@ model Payment {
 }
 
 model Sale {
-  id            String   @id @default(uuid())
+  id            String        @id @default(uuid())
   tenantId      String
   companyId     String
   invoiceNumber String
   date          DateTime
-  totalAmount   Decimal  @db.Decimal(10,2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
   status        PaymentStatus @default(PENDING)
-  notes         String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, companyId, invoiceNumber])
   @@index([tenantId])
   @@index([tenantId, invoiceNumber])
-  @@unique([tenantId, companyId, invoiceNumber])
+}
+
+model ProjectUser {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
 }

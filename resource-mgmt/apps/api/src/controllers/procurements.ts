@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as procurementRepo from '../repositories/procurements.js';
-import { NotFoundError, ConflictError } from '../lib/errors.js';
+import * as projectUserRepo from '../repositories/projectUsers.js';
+import { NotFoundError, ConflictError, ValidationError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getProcurements(req: Request, res: Response, next: NextFunction) {
@@ -34,6 +35,8 @@ export async function getProcurement(req: Request, res: Response, next: NextFunc
 export async function createProcurement(req: Request, res: Response, next: NextFunction) {
   try {
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
 
     // Verify company exists and belongs to tenant
@@ -59,13 +62,21 @@ export async function createProcurement(req: Request, res: Response, next: NextF
     // Use lightweight validation to avoid schema errors from deep includes
     try {
       const { projectExistsForTenant } = await import('../repositories/projects.js');
-      const projectIds = data.allocations.map((a: any) => a.projectId as string);
+      const projectIds = data.allocations?.map((a: any) => a.projectId as string) || [];
       const uniqueProjectIds = [...new Set(projectIds)];
 
       for (const projectId of uniqueProjectIds) {
         const exists = await projectExistsForTenant(tenantId, projectId as string);
         if (!exists) {
           throw new NotFoundError('Project', projectId as string);
+        }
+        
+        // If user is Contributor, check if they have access to this project
+        if (role === 'Contributor') {
+          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId);
+          if (!hasAccess) {
+            throw new ValidationError(`You do not have access to project ${projectId}`);
+          }
         }
       }
     } catch (error: any) {
@@ -74,7 +85,7 @@ export async function createProcurement(req: Request, res: Response, next: NextF
       if (errorMessage.includes('schema') || errorMessage.includes('column') || errorMessage.includes('does not exist')) {
         console.warn('Project validation skipped due to schema error, proceeding with expense creation:', error?.message);
       } else {
-        // Re-throw non-schema errors (like NotFoundError)
+        // Re-throw non-schema errors (like NotFoundError, ValidationError)
         throw error;
       }
     }
@@ -111,6 +122,8 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
   try {
     const { id } = req.params;
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
 
     // Verify expense exists and belongs to tenant
@@ -138,6 +151,14 @@ export async function updateProcurement(req: Request, res: Response, next: NextF
         const project = await findProjectByIdForTenant(tenantId, projectId as string);
         if (!project) {
           throw new NotFoundError('Project', projectId as string);
+        }
+        
+        // If user is Contributor, check if they have access to this project
+        if (role === 'Contributor') {
+          const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, projectId);
+          if (!hasAccess) {
+            throw new ValidationError(`You do not have access to project ${projectId}`);
+          }
         }
       }
     }

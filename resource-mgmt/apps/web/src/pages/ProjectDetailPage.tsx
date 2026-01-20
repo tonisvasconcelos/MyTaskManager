@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../shared/api/tasks'
-import { useProject } from '../shared/api/projects'
+import { useProject, useProjectUsers, useUpdateProjectUsers } from '../shared/api/projects'
 import { useUsers } from '../shared/api/users'
 import { useProcurements } from '../shared/api/procurements'
+import { useMe } from '../shared/api/auth'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -65,7 +66,29 @@ export function ProjectDetailPage() {
   const expensesLoading = expensesQuery.isLoading
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet' | 'expenses'>('tasks')
+  const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet' | 'expenses' | 'users'>('tasks')
+  const { data: meData } = useMe()
+  const currentUserRole = meData?.user?.role
+  const isAdmin = currentUserRole === 'Admin' || currentUserRole === 'Manager'
+  
+  // Project users permissions
+  const { data: projectUsers, isLoading: projectUsersLoading } = useProjectUsers(id || '')
+  const updateProjectUsersMutation = useUpdateProjectUsers()
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  
+  // Initialize selectedUserIds when projectUsers loads
+  useMemo(() => {
+    if (projectUsers) {
+      setSelectedUserIds(new Set(projectUsers.map((u) => u.id)))
+      setHasUnsavedChanges(false)
+    }
+  }, [projectUsers])
+  
+  // Get Contributor users only
+  const contributorUsers = useMemo(() => {
+    return users?.filter((u) => u.role === 'Contributor') || []
+  }, [users])
   
   const statusColumns = getStatusColumns(t)
 
@@ -208,6 +231,18 @@ export function ProjectDetailPage() {
           >
             {t('projectDetail.expenses')}
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-3 md:px-4 py-2 font-medium transition-colors text-sm md:text-base flex-1 md:flex-initial ${
+                activeTab === 'users'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {t('projectDetail.usersPermissions')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -386,6 +421,104 @@ export function ProjectDetailPage() {
               <p className="text-text-secondary text-center py-8">{t('projectDetail.noExpenses')}</p>
             </Card>
           )}
+        </div>
+      )}
+
+      {activeTab === 'users' && isAdmin && (
+        <div>
+          <Card>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary mb-2">
+                  {t('projectDetail.selectContributors')}
+                </h3>
+                <p className="text-sm text-text-secondary mb-4">
+                  {t('projectDetail.selectContributorsDescription')}
+                </p>
+              </div>
+
+              {projectUsersLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12" />
+                  <Skeleton className="h-12" />
+                  <Skeleton className="h-12" />
+                </div>
+              ) : contributorUsers.length === 0 ? (
+                <p className="text-text-secondary text-center py-8">{t('projectDetail.noContributors')}</p>
+              ) : (
+                <>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {contributorUsers.map((user) => {
+                      const isSelected = selectedUserIds.has(user.id)
+                      return (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-3 p-3 border border-border rounded-md hover:bg-surface cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedUserIds)
+                              if (e.target.checked) {
+                                newSelected.add(user.id)
+                              } else {
+                                newSelected.delete(user.id)
+                              }
+                              setSelectedUserIds(newSelected)
+                              setHasUnsavedChanges(true)
+                            }}
+                            className="w-4 h-4 text-accent border-border rounded focus:ring-accent focus:ring-2"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-text-primary">{user.fullName}</p>
+                            {user.email && (
+                              <p className="text-sm text-text-secondary">{user.email}</p>
+                            )}
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-border">
+                    <Button
+                      onClick={async () => {
+                        if (!id) return
+                        try {
+                          await updateProjectUsersMutation.mutateAsync({
+                            projectId: id,
+                            userIds: Array.from(selectedUserIds),
+                          })
+                          setHasUnsavedChanges(false)
+                        } catch (error) {
+                          console.error('Error saving permissions:', error)
+                        }
+                      }}
+                      disabled={updateProjectUsersMutation.isPending || !hasUnsavedChanges}
+                    >
+                      {updateProjectUsersMutation.isPending
+                        ? t('common.saving')
+                        : t('projectDetail.savePermissions')}
+                    </Button>
+                    {hasUnsavedChanges && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          if (projectUsers) {
+                            setSelectedUserIds(new Set(projectUsers.map((u) => u.id)))
+                            setHasUnsavedChanges(false)
+                          }
+                        }}
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
         </div>
       )}
 

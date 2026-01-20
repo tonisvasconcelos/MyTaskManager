@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as timesheetRepo from '../repositories/timesheet.js';
+import * as projectUserRepo from '../repositories/projectUsers.js';
+import * as taskRepo from '../repositories/tasks.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 
 export async function getTimesheet(req: Request, res: Response, next: NextFunction) {
@@ -45,6 +47,8 @@ export async function getTimeEntry(req: Request, res: Response, next: NextFuncti
 export async function createTimeEntry(req: Request, res: Response, next: NextFunction) {
   try {
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
     
     // Validate hours
@@ -53,6 +57,20 @@ export async function createTimeEntry(req: Request, res: Response, next: NextFun
     }
     if (data.hours > 24) {
       throw new ValidationError('Hours cannot exceed 24');
+    }
+
+    // Verify task exists and get projectId
+    const task = await taskRepo.findTaskByIdForTenant(tenantId, data.taskId);
+    if (!task) {
+      throw new NotFoundError('Task', data.taskId);
+    }
+    
+    // If user is Contributor, check if they have access to this project
+    if (role === 'Contributor') {
+      const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, task.projectId);
+      if (!hasAccess) {
+        throw new ValidationError('You do not have access to this project');
+      }
     }
 
     // Convert entryDate string to Date
@@ -79,11 +97,30 @@ export async function updateTimeEntry(req: Request, res: Response, next: NextFun
   try {
     const { id } = req.params;
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
 
     const timeEntry = await timesheetRepo.findTimeEntryByIdForTenant(tenantId, id);
     if (!timeEntry) {
       throw new NotFoundError('Time entry', id);
+    }
+    
+    // Get the projectId from the task (either existing or new taskId if being updated)
+    const taskId = data.taskId || (timeEntry as any).taskId || timeEntry.task?.id;
+    if (taskId) {
+      const task = await taskRepo.findTaskByIdForTenant(tenantId, taskId);
+      if (!task) {
+        throw new NotFoundError('Task', taskId);
+      }
+      
+      // If user is Contributor, check if they have access to this project
+      if (role === 'Contributor') {
+        const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, task.projectId);
+        if (!hasAccess) {
+          throw new ValidationError('You do not have access to this project');
+        }
+      }
     }
 
     // Validate hours if provided

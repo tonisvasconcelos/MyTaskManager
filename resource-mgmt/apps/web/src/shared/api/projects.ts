@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from './client'
-import type { Project, PaginationResult, PaginationParams } from '../types/api'
+import type { Project, PaginationResult, PaginationParams, User } from '../types/api'
 
 export function useProjects(
   params?: PaginationParams & { search?: string; companyId?: string; status?: string }
@@ -47,6 +47,26 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/projects/${id}`),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+}
+
+export function useProjectUsers(projectId: string) {
+  return useQuery({
+    queryKey: ['projects', projectId, 'users'],
+    queryFn: () => apiClient.get<User[]>(`/projects/${projectId}/users`),
+    enabled: !!projectId,
+  })
+}
+
+export function useUpdateProjectUsers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, userIds }: { projectId: string; userIds: string[] }) =>
+      apiClient.put<User[]>(`/projects/${projectId}/users`, { userIds }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId, 'users'] })
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
   })

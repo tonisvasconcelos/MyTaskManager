@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as taskRepo from '../repositories/tasks.js';
-import { NotFoundError } from '../lib/errors.js';
+import * as projectUserRepo from '../repositories/projectUsers.js';
+import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { createPaginationResult } from '../lib/pagination.js';
 
 export async function getTasks(req: Request, res: Response, next: NextFunction) {
@@ -48,6 +49,8 @@ export async function getTask(req: Request, res: Response, next: NextFunction) {
 export async function createTask(req: Request, res: Response, next: NextFunction) {
   try {
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
     
     // Verify project exists and belongs to tenant
@@ -55,6 +58,14 @@ export async function createTask(req: Request, res: Response, next: NextFunction
     const project = await findProjectByIdForTenant(tenantId, data.projectId);
     if (!project) {
       throw new NotFoundError('Project', data.projectId);
+    }
+    
+    // If user is Contributor, check if they have access to this project
+    if (role === 'Contributor') {
+      const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, data.projectId);
+      if (!hasAccess) {
+        throw new ValidationError('You do not have access to this project');
+      }
     }
     
     // Verify assignee exists and belongs to tenant if provided
@@ -132,6 +143,8 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
   try {
     const { id } = req.params;
     const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
     const data = req.body;
     
     // Convert date strings to Date objects
@@ -147,6 +160,14 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
     const task = await taskRepo.findTaskByIdForTenant(tenantId, id);
     if (!task) {
       throw new NotFoundError('Task', id);
+    }
+    
+    // If user is Contributor, check if they have access to this project
+    if (role === 'Contributor') {
+      const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, task.projectId);
+      if (!hasAccess) {
+        throw new ValidationError('You do not have access to this project');
+      }
     }
     
     const updated = await taskRepo.updateTask(id, data);

@@ -14,6 +14,7 @@
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "update": "Update",
     "search": "Search",
@@ -101,6 +102,7 @@
     "tasks": "Tasks",
     "timesheetSummary": "Timesheet Summary",
     "expenses": "Expenses",
+    "usersPermissions": "Users Permissions",
     "createTask": "Create Task",
     "backlog": "Backlog",
     "inProgress": "In Progress",
@@ -109,7 +111,13 @@
     "noTasks": "No tasks",
     "noExpenses": "No expenses allocated to this project",
     "totalAllocated": "Total Allocated",
-    "comingSoon": "Timesheet summary coming soon..."
+    "comingSoon": "Timesheet summary coming soon...",
+    "selectContributors": "Select Contributor users who can access this project",
+    "selectContributorsDescription": "Only Contributor users can be granted access to projects. Selected users will be able to view the project, create and edit tasks, create time entries, and create expenses.",
+    "noContributors": "No Contributor users found",
+    "savePermissions": "Save Permissions",
+    "permissionsSaved": "Permissions saved successfully",
+    "permissionsError": "Error saving permissions"
   },
   "tasks": {
     "title": "Title",

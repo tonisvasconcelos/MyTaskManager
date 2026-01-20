@@ -48,8 +48,9 @@ export function createApp(): Express {
       }
 
       // Allow GitHub Pages origins in general (optional convenience for MVP)
-      // Match patterns like: https://username.github.io or https://username.github.io/MyTaskManager
-      if (/^https:\/\/[a-z0-9-]+\.github\.io(\/.*)?$/i.test(origin)) {
+      // Browsers send only origin (protocol + hostname), not path
+      // Match patterns like: https://username.github.io
+      if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(origin)) {
         return callback(null, true);
       }
 
@@ -57,9 +58,10 @@ export function createApp(): Express {
       console.warn(`CORS blocked for origin: ${origin}`);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
-    credentials: false,
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Type', 'Authorization'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
   };

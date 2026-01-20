@@ -115,9 +115,15 @@ export function WorkBlockModal({
 
   const onSubmit = async (data: WorkBlockFormData) => {
     try {
+      // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO 8601
+      const startAtISO = new Date(data.startAt).toISOString()
+      const endAtISO = new Date(data.endAt).toISOString()
+      
       await onSave({
         ...(block && { id: block.id }),
         ...data,
+        startAt: startAtISO,
+        endAt: endAtISO,
         projectId: data.projectId || null,
         taskId: data.taskId || null,
         notes: data.notes || null,

@@ -36,7 +36,7 @@ export function useUpdateSubTask() {
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<SubTask> & { id: string }) =>
       apiClient.put<SubTask>(`/subtasks/${id}`, data),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks'] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },

@@ -3,13 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useTasks, useUpdateTask } from '../../shared/api/tasks'
 import { useDebounce } from '../../shared/hooks/useDebounce'
-import { useMe } from '../../shared/api/auth'
 import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { Badge } from '../ui/Badge'
 import { Pagination } from '../ui/Pagination'
 import { Skeleton } from '../ui/Skeleton'
-import { Button } from '../ui/Button'
 import type { Task } from '../../shared/types/api'
 
 const priorityColors: Record<string, 'default' | 'warning' | 'danger'> = {
@@ -28,9 +26,6 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'danger' 
 export function AllTasksListView() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { data: meData } = useMe()
-  const currentUserRole = meData?.user?.role
-  const isAdmin = currentUserRole === 'Admin' || currentUserRole === 'Manager'
   
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')

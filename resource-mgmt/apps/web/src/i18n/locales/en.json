@@ -33,6 +33,7 @@
   "dashboard": {
     "title": "Dashboard",
     "activeProjects": "Active Projects",
+    "tasks": "Tasks",
     "ongoingTasks": "Ongoing Tasks",
     "hoursThisWeek": "Hours This Week",
     "viewAll": "View all"

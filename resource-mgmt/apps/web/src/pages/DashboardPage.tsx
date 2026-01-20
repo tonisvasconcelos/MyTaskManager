@@ -50,7 +50,7 @@ export function DashboardPage() {
           )}
         </Card>
         <Card>
-          <h3 className="text-sm text-text-secondary mb-2">{t('dashboard.ongoingTasks')}</h3>
+          <h3 className="text-sm text-text-secondary mb-2">{t('dashboard.tasks')}</h3>
           {tasksLoading ? (
             <Skeleton className="h-8 w-16" />
           ) : (
@@ -68,7 +68,7 @@ export function DashboardPage() {
       </div>
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-          <h2 className="text-xl font-semibold text-text-primary">{t('dashboard.ongoingTasks')}</h2>
+          <h2 className="text-xl font-semibold text-text-primary">{t('dashboard.tasks')}</h2>
           <Link to="/tasks" className="text-accent hover:underline text-sm">
             {t('dashboard.viewAll')}
           </Link>

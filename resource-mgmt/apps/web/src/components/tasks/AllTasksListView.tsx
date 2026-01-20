@@ -216,6 +216,9 @@ export function AllTasksListView() {
                   <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
                     {t('tasks.assignee')}
                   </th>
+                  <th className="text-left p-3 text-sm font-semibold text-text-secondary" scope="col">
+                    {t('tasks.refLink')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -307,6 +310,21 @@ export function AllTasksListView() {
                     <td className="p-3 text-sm text-text-secondary">
                       {task.assignee ? task.assignee.fullName : t('tasks.unassigned')}
                     </td>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      {task.refLink ? (
+                        <a
+                          href={task.refLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent hover:underline text-sm break-all"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {task.refLink.length > 40 ? `${task.refLink.substring(0, 40)}...` : task.refLink}
+                        </a>
+                      ) : (
+                        <span className="text-text-secondary text-sm">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -386,6 +404,20 @@ export function AllTasksListView() {
                       {task.estimatedEndDate && (
                         <span>
                           {t('projectDetail.dueDate')}: {formatDate(task.estimatedEndDate)}
+                        </span>
+                      )}
+                      {task.refLink && (
+                        <span onClick={(e) => e.stopPropagation()}>
+                          {t('tasks.refLink')}:{' '}
+                          <a
+                            href={task.refLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-accent hover:underline break-all"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {task.refLink.length > 30 ? `${task.refLink.substring(0, 30)}...` : task.refLink}
+                          </a>
                         </span>
                       )}
                     </div>

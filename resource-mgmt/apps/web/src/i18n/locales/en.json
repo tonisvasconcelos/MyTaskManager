@@ -379,7 +379,8 @@
       "cancelled": "Cancelled"
     },
     "weekNavigation": {
-      "today": "Today"
+      "today": "Today",
+      "week": "Week"
     },
     "emptyState": "No work blocks for this week. Click on the grid or use 'New Block' to create one."
   }

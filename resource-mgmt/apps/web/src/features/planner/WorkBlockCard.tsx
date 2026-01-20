@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { Badge } from '../../components/ui/Badge'
 import type { WorkBlock } from '../../shared/types/api'
 import { formatTime } from './utils/date'
 
@@ -24,45 +23,69 @@ export function WorkBlockCard({
 }: WorkBlockCardProps) {
   const { t } = useTranslation()
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type: string, customColor?: string | null) => {
+    if (customColor) {
+      return customColor
+    }
     switch (type) {
       case 'Meeting':
-        return 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+        return '#3b82f6' // blue-500
       case 'Focus':
-        return 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+        return '#a855f7' // purple-500
       case 'Admin':
-        return 'bg-gray-500/20 border-gray-500/50 text-gray-300'
+        return '#6b7280' // gray-500
       case 'Break':
-        return 'bg-green-500/20 border-green-500/50 text-green-300'
+        return '#10b981' // green-500
       default:
-        return 'bg-accent/20 border-accent/50 text-accent'
+        return '#f59e0b' // amber-500 (accent)
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusIndicator = (status: string) => {
     switch (status) {
       case 'Confirmed':
-        return 'success'
+        return '✓'
       case 'Completed':
-        return 'success'
+        return '✓'
       case 'Cancelled':
-        return 'danger'
+        return '✕'
       default:
-        return 'default'
+        return null
     }
   }
+
+  const stripeColor = getTypeColor(block.type, block.color)
+  const statusIcon = getStatusIndicator(block.status)
 
   const width = totalLanes > 1 ? `${100 / totalLanes}%` : '100%'
   const left = totalLanes > 1 ? `${(lane / totalLanes) * 100}%` : '0%'
 
+  // Build secondary info line (project/task/user)
+  const secondaryInfo = []
+  if (block.project) {
+    secondaryInfo.push(block.project.name)
+  }
+  if (block.task) {
+    secondaryInfo.push(block.task.title)
+  }
+  if (block.user) {
+    secondaryInfo.push(block.user.fullName)
+  }
+  const secondaryText = secondaryInfo.join(' • ')
+
   return (
     <div
-      className={`absolute border rounded-md p-2 cursor-move hover:shadow-lg transition-all ${getTypeColor(block.type)}`}
+      className="absolute rounded-sm cursor-move hover:shadow-md transition-all overflow-hidden"
       style={{
         ...style,
         width,
         left,
         zIndex: 10 + lane,
+        backgroundColor: `${stripeColor}20`, // 20% opacity
+        borderLeft: `3px solid ${stripeColor}`,
+        borderRight: `1px solid ${stripeColor}40`,
+        borderTop: `1px solid ${stripeColor}40`,
+        borderBottom: `1px solid ${stripeColor}40`,
       }}
       onClick={(e) => {
         e.stopPropagation()
@@ -78,7 +101,7 @@ export function WorkBlockCard({
       {/* Resize handle - top */}
       {onResizeStart && (
         <div
-          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-white/20 rounded-t-md z-10"
+          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-white/20 z-10"
           onPointerDown={(e) => {
             e.stopPropagation()
             onResizeStart(e, 'top')
@@ -86,30 +109,40 @@ export function WorkBlockCard({
         />
       )}
 
-      <div className="flex flex-col gap-1 text-xs">
-        <div className="font-semibold truncate">{block.title}</div>
-        <div className="text-text-secondary/80">
-          {formatTime(block.startAt)} - {formatTime(block.endAt)}
+      <div className="flex flex-col px-2 py-1 text-xs h-full">
+        {/* Title - prominent */}
+        <div className="font-semibold text-text-primary truncate leading-tight mb-0.5">
+          {block.title}
         </div>
-        {block.project && (
-          <Badge variant="default" className="text-xs py-0 px-1">
-            {block.project.name}
-          </Badge>
+        
+        {/* Secondary info - compact single line */}
+        {secondaryText && (
+          <div className="text-text-secondary/70 text-[10px] truncate leading-tight mb-0.5">
+            {secondaryText}
+          </div>
         )}
-        {block.task && (
-          <Badge variant="info" className="text-xs py-0 px-1">
-            {block.task.title}
-          </Badge>
-        )}
-        <Badge variant={getStatusColor(block.status)} className="text-xs py-0 px-1">
-          {t(`planner.statuses.${block.status.toLowerCase()}`)}
-        </Badge>
+
+        {/* Time and status indicator */}
+        <div className="flex items-center justify-between mt-auto">
+          <div className="text-text-secondary/60 text-[10px]">
+            {formatTime(block.startAt)} - {formatTime(block.endAt)}
+          </div>
+          {statusIcon && (
+            <div
+              className="text-[10px] leading-none"
+              style={{ color: stripeColor }}
+              title={t(`planner.statuses.${block.status.toLowerCase()}`)}
+            >
+              {statusIcon}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Resize handle - bottom */}
       {onResizeStart && (
         <div
-          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-white/20 rounded-b-md z-10"
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-white/20 z-10"
           onPointerDown={(e) => {
             e.stopPropagation()
             onResizeStart(e, 'bottom')

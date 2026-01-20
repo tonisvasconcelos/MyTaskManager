@@ -378,7 +378,8 @@
       "cancelled": "Cancelado"
     },
     "weekNavigation": {
-      "today": "Hoje"
+      "today": "Hoje",
+      "week": "Semana"
     },
     "emptyState": "Nenhum bloco de trabalho para esta semana. Clique na grade ou use 'Novo Bloco' para criar um."
   }

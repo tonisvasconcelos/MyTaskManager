@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
 import { formatDateRange, getWeekRange } from './utils/date'
+import { getISOWeek } from 'date-fns'
 
 interface PlannerToolbarProps {
   currentWeek: Date
@@ -61,22 +62,29 @@ export function PlannerToolbar({
     ? tasks.filter((t) => t.projectId === projectFilter)
     : tasks
 
+  const weekNumber = getISOWeek(currentWeek)
+
   return (
-    <div className="flex flex-col gap-4 mb-6">
-      {/* Week Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="flex flex-col gap-3 mb-4">
+      {/* Week Navigation - Outlook style */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={onToday}>
             {t('planner.weekNavigation.today')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => navigateWeek('prev')}>
-            ← {t('common.previous')}
+            ←
           </Button>
-          <h2 className="text-lg font-semibold text-text-primary min-w-[200px] text-center">
-            {formatDateRange(weekRange.start, weekRange.end)}
-          </h2>
+          <div className="flex items-center gap-2 min-w-[240px] justify-center">
+            <h2 className="text-base font-semibold text-text-primary">
+              {formatDateRange(weekRange.start, weekRange.end)}
+            </h2>
+            <span className="text-sm text-text-secondary">
+              ({t('planner.weekNavigation.week')} {weekNumber})
+            </span>
+          </div>
           <Button variant="secondary" size="sm" onClick={() => navigateWeek('next')}>
-            {t('common.next')} →
+            →
           </Button>
         </div>
         <Button onClick={onNewBlock}>{t('planner.newBlock')}</Button>

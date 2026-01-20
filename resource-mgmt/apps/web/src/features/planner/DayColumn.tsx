@@ -51,11 +51,11 @@ export function DayColumn({
   }
 
   return (
-    <div className="flex flex-col border-r border-border flex-1 min-w-0">
-      {/* Day Header - Sticky */}
-      <div className="sticky top-0 z-20 bg-surface border-b border-border p-2 text-center">
-        <div className="text-sm font-semibold text-text-primary">{format(date, 'EEE')}</div>
-        <div className="text-xs text-text-secondary">{format(date, 'MMM d')}</div>
+    <div className="flex flex-col border-r-2 border-border flex-1 min-w-0">
+      {/* Day Header - Sticky - Outlook style */}
+      <div className="sticky top-0 z-20 bg-surface border-b-2 border-border p-2 text-center">
+        <div className="text-2xl font-semibold text-text-primary leading-none">{format(date, 'd')}</div>
+        <div className="text-xs text-text-secondary mt-1 uppercase">{format(date, 'EEE')}</div>
       </div>
 
       {/* Day Content - Scrollable */}
@@ -64,19 +64,34 @@ export function DayColumn({
         style={{ height: `${(endHour - startHour) * hourHeight}px` }}
         onClick={handleEmptyClick}
       >
-        {/* Time slots background */}
-        {Array.from({ length: endHour - startHour }, (_, i) => (
-          <div
-            key={i}
-            className="absolute border-b border-border/30"
-            style={{
-              top: `${i * hourHeight}px`,
-              left: 0,
-              right: 0,
-              height: `${hourHeight}px`,
-            }}
-          />
-        ))}
+        {/* Time slots background - Hour lines (solid) and half-hour lines (dashed) */}
+        {Array.from({ length: endHour - startHour }, (_, i) => {
+          const hourTop = i * hourHeight
+          return (
+            <div key={i}>
+              {/* Hour line - solid */}
+              <div
+                className="absolute border-b border-border/40"
+                style={{
+                  top: `${hourTop}px`,
+                  left: 0,
+                  right: 0,
+                  height: '1px',
+                }}
+              />
+              {/* Half-hour line - dashed */}
+              <div
+                className="absolute border-b border-border/20 border-dashed"
+                style={{
+                  top: `${hourTop + hourHeight / 2}px`,
+                  left: 0,
+                  right: 0,
+                  height: '1px',
+                }}
+              />
+            </div>
+          )
+        })}
 
         {/* Blocks */}
         {lanes.map(({ block, lane, totalLanes }) => {

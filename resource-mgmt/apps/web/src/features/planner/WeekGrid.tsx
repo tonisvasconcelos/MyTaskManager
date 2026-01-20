@@ -2,12 +2,18 @@ import { DayColumn } from './DayColumn'
 import { getWeekDays } from './utils/date'
 import type { WorkBlock } from '../../shared/types/api'
 
+interface TimeZoneConfig {
+  label: string
+  timeZone: string
+}
+
 interface WeekGridProps {
   currentWeek: Date
   blocks: WorkBlock[]
   startHour: number
   endHour: number
   hourHeight: number
+  timeZones?: TimeZoneConfig[]
   onBlockClick: (block: WorkBlock) => void
   onBlockDragStart?: (block: WorkBlock, e: React.PointerEvent) => void
   onBlockResizeStart?: (block: WorkBlock, e: React.PointerEvent, side: 'top' | 'bottom') => void
@@ -20,6 +26,10 @@ export function WeekGrid({
   startHour,
   endHour,
   hourHeight,
+  timeZones = [
+    { label: 'Local', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    { label: 'BR', timeZone: 'America/Sao_Paulo' },
+  ],
   onBlockClick,
   onBlockDragStart,
   onBlockResizeStart,
@@ -27,10 +37,24 @@ export function WeekGrid({
 }: WeekGridProps) {
   const weekDays = getWeekDays(currentWeek)
 
-  // Generate time labels
+  // Generate time labels for each timezone
+  const timeFormatter = (timeZone: string) => {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: false,
+      timeZone,
+    })
+  }
+
   const timeLabels = Array.from({ length: endHour - startHour }, (_, i) => {
     const hour = startHour + i
-    return `${hour.toString().padStart(2, '0')}:00`
+    const date = new Date()
+    date.setHours(hour, 0, 0, 0)
+    return timeZones.map((tz) => ({
+      label: timeFormatter(tz.timeZone).format(date).replace(':00', ''),
+      timeZone: tz.label,
+    }))
   })
 
   // Current time indicator
@@ -46,26 +70,45 @@ export function WeekGrid({
       ? ((now.getHours() - startHour) * 60 + now.getMinutes()) * (hourHeight / 60)
       : null
 
+  const gutterWidth = timeZones.length * 50 + 20 // 50px per timezone column + padding
+
   return (
     <div className="flex border border-border rounded-md overflow-hidden bg-surface relative">
       {/* Time Gutter - Sticky */}
-      <div className="sticky left-0 z-30 bg-surface border-r border-border flex-shrink-0">
+      <div className="sticky left-0 z-30 bg-surface border-r border-border flex-shrink-0" style={{ width: `${gutterWidth}px` }}>
+        {/* Timezone header */}
         <div
-          className="sticky top-0 z-20 bg-surface border-b border-border"
+          className="sticky top-0 z-20 bg-surface border-b border-border flex"
           style={{ height: '60px' }}
-        />
+        >
+          {timeZones.map((tz) => (
+            <div
+              key={tz.timeZone}
+              className="flex-1 text-xs text-text-secondary text-center border-r border-border last:border-r-0 flex items-center justify-center"
+            >
+              {tz.label}
+            </div>
+          ))}
+        </div>
         <div className="relative" style={{ height: `${(endHour - startHour) * hourHeight}px` }}>
-          {timeLabels.map((label, i) => (
+          {timeLabels.map((labels, i) => (
             <div
               key={i}
-              className="absolute text-xs text-text-secondary pr-2 text-right"
+              className="absolute flex"
               style={{
                 top: `${i * hourHeight - 8}px`,
+                left: '4px',
                 right: '4px',
-                width: '80px',
               }}
             >
-              {label}
+              {labels.map((label) => (
+                <div
+                  key={label.timeZone}
+                  className="flex-1 text-xs text-text-secondary text-center border-r border-border/30 last:border-r-0"
+                >
+                  {label.label}
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -97,7 +140,7 @@ export function WeekGrid({
             top: `${currentTimePosition + 60}px`, // 60px for header
             height: '2px',
             backgroundColor: '#ef4444',
-            left: '80px',
+            left: `${gutterWidth}px`,
           }}
         >
           <div

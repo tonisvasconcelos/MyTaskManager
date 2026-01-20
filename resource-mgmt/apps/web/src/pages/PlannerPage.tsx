@@ -190,8 +190,8 @@ export function PlannerPage() {
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
 
-      // Account for time gutter width (80px)
-      const timeGutterWidth = 80
+      // Account for time gutter width (dynamic based on timezones: 2 timezones * 50px + 20px padding)
+      const timeGutterWidth = 120
       const weekColumnsWidth = rect.width - timeGutterWidth
       const dayWidth = weekColumnsWidth / 7
       const dayIndex = Math.max(0, Math.min(6, Math.floor((x - timeGutterWidth) / dayWidth)))

@@ -9,6 +9,7 @@ import { OngoingTasksPage } from '../pages/OngoingTasksPage'
 import { TimesheetPage } from '../pages/TimesheetPage'
 import { FinancePage } from '../pages/FinancePage'
 import { LoginPage } from '../pages/LoginPage'
+import { PlannerPage } from '../pages/PlannerPage'
 import { isLoggedIn } from '../shared/api/client'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminTenantsPage } from '../pages/admin/AdminTenantsPage'
@@ -106,6 +107,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <FinancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/planner"
+        element={
+          <ProtectedRoute>
+            <PlannerPage />
           </ProtectedRoute>
         }
       />

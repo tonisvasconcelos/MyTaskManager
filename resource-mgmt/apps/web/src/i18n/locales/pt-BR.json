@@ -8,6 +8,7 @@
     "timesheet": "Registro de Horas",
     "procurements": "Compras de TI",
     "finance": "Finanças",
+    "planner": "Planejador",
     "signIn": "Entrar",
     "signOut": "Sair",
     "adminPortal": "Portal do administrador",
@@ -342,5 +343,43 @@
   "sales": {
     "comingSoon": "Em Breve",
     "comingSoonDescription": "O módulo de vendas estará disponível em uma atualização futura."
+  },
+  "planner": {
+    "title": "Planejador Semanal",
+    "newBlock": "Novo Bloco",
+    "editBlock": "Editar Bloco",
+    "deleteConfirm": "Tem certeza que deseja excluir este bloco de trabalho?",
+    "blockTitle": "Título",
+    "startTime": "Hora de Início",
+    "endTime": "Hora de Término",
+    "type": "Tipo",
+    "status": "Status",
+    "project": "Projeto",
+    "task": "Tarefa",
+    "location": "Localização",
+    "notes": "Notas",
+    "filters": {
+      "allProjects": "Todos os Projetos",
+      "allTasks": "Todas as Tarefas",
+      "allStatuses": "Todos os Status",
+      "allUsers": "Todos os Usuários"
+    },
+    "types": {
+      "planned": "Planejado",
+      "meeting": "Reunião",
+      "focus": "Foco",
+      "admin": "Administrativo",
+      "break": "Pausa"
+    },
+    "statuses": {
+      "planned": "Planejado",
+      "confirmed": "Confirmado",
+      "completed": "Concluído",
+      "cancelled": "Cancelado"
+    },
+    "weekNavigation": {
+      "today": "Hoje"
+    },
+    "emptyState": "Nenhum bloco de trabalho para esta semana. Clique na grade ou use 'Novo Bloco' para criar um."
   }
 }

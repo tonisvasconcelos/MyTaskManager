@@ -16,6 +16,7 @@ import { financeRouter } from './routes/finance.js';
 import { authRouter } from './routes/auth.js';
 import { requireTenantAuth } from './middlewares/requireAuth.js';
 import { adminRouter } from './routes/admin.js';
+import { plannerRouter } from './routes/planner.js';
 
 export function createApp(): Express {
   const app = express();
@@ -99,6 +100,7 @@ export function createApp(): Express {
   app.use('/api/payments', paymentsRouter);
   app.use('/api/sales', salesRouter);
   app.use('/api/finance', financeRouter);
+  app.use('/api/planner', plannerRouter);
 
   // Error handler (must be last)
   app.use(errorHandler);

@@ -8,6 +8,7 @@
     "timesheet": "Timesheet",
     "procurements": "Procurements",
     "finance": "Finance",
+    "planner": "Planner",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminPortal": "Admin portal",
@@ -343,5 +344,43 @@
   "sales": {
     "comingSoon": "Coming Soon",
     "comingSoonDescription": "Sales module will be available in a future update."
+  },
+  "planner": {
+    "title": "Weekly Planner",
+    "newBlock": "New Block",
+    "editBlock": "Edit Block",
+    "deleteConfirm": "Are you sure you want to delete this work block?",
+    "blockTitle": "Title",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "type": "Type",
+    "status": "Status",
+    "project": "Project",
+    "task": "Task",
+    "location": "Location",
+    "notes": "Notes",
+    "filters": {
+      "allProjects": "All Projects",
+      "allTasks": "All Tasks",
+      "allStatuses": "All Statuses",
+      "allUsers": "All Users"
+    },
+    "types": {
+      "planned": "Planned",
+      "meeting": "Meeting",
+      "focus": "Focus",
+      "admin": "Admin",
+      "break": "Break"
+    },
+    "statuses": {
+      "planned": "Planned",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "weekNavigation": {
+      "today": "Today"
+    },
+    "emptyState": "No work blocks for this week. Click on the grid or use 'New Block' to create one."
   }
 }

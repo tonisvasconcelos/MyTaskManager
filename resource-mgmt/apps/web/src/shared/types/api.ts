@@ -261,3 +261,50 @@ export interface ProjectFinancialEntriesResponse {
   entries: ProjectFinancialEntry[]
   summary: ProjectFinancialSummary[]
 }
+
+export type WorkBlockType = 'Planned' | 'Meeting' | 'Focus' | 'Admin' | 'Break'
+
+export type WorkBlockStatus = 'Planned' | 'Confirmed' | 'Completed' | 'Cancelled'
+
+export interface WorkBlock {
+  id: string
+  tenantId: string
+  userId: string
+  projectId: string | null
+  taskId: string | null
+  type: WorkBlockType
+  status: WorkBlockStatus
+  title: string
+  notes: string | null
+  location: string | null
+  startAt: string
+  endAt: string
+  isAllDay: boolean
+  color: string | null
+  createdAt: string
+  updatedAt: string
+  project?: {
+    id: string
+    name: string
+    company?: {
+      id: string
+      name: string
+    }
+  } | null
+  task?: {
+    id: string
+    title: string
+    status: string
+  } | null
+  user?: {
+    id: string
+    fullName: string
+    email: string | null
+  }
+}
+
+export interface PlannerLookups {
+  projects: Array<{ id: string; name: string }>
+  tasks: Array<{ id: string; title: string; projectId: string; status: string }>
+  users: Array<{ id: string; fullName: string }>
+}

@@ -54,7 +54,7 @@ export async function deleteSubTask(id: string): Promise<SubTask> {
 }
 
 export async function reorderSubTasks(
-  taskId: string,
+  _taskId: string,
   subTaskIds: string[]
 ): Promise<void> {
   // Update order for all sub-tasks in the provided order

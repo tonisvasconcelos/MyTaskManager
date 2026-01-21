@@ -16,7 +16,7 @@ const workBlockSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format'),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in HH:mm format'),
   importance: z.enum(['Low', 'Medium', 'High']),
-  description: z.string().min(1, 'Task description is required'),
+  description: z.string().trim().min(1, 'Task description is required'),
   notes: z.string().optional().or(z.literal('')),
   projectId: z.string().uuid().optional().or(z.literal('')),
   taskId: z.string().uuid().optional().or(z.literal('')),
@@ -128,8 +128,10 @@ export function WorkBlockModal({
       const startAtISO = new Date(`${data.startDate}T${data.startTime}`).toISOString()
       const endAtISO = new Date(`${data.endDate}T${data.endTime}`).toISOString()
 
+      const trimmedDescription = data.description.trim()
+
       const title = deriveTitle({
-        description: data.description,
+        description: trimmedDescription,
         projectId: data.projectId || null,
         taskId: data.taskId || null,
         projects,
@@ -145,10 +147,10 @@ export function WorkBlockModal({
         type: 'Planned',
         status: block?.status || 'Planned',
         importance: data.importance as WorkBlockImportance,
-        description: data.description || null,
+        description: trimmedDescription || null,
         projectId: data.projectId || null,
         taskId: data.taskId || null,
-        notes: data.notes || null,
+        notes: data.notes?.trim() || null,
       })
       reset()
       onClose()

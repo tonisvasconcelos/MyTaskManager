@@ -127,13 +127,13 @@ export function WorkBlockModal({
   // Reset form when modal opens/closes or block changes
   useEffect(() => {
     if (isOpen) {
-      const defaultValues = block
+      const defaultValues: WorkBlockFormData = block
         ? {
             startDate: formatDateInput(block.startAt),
             startTime: formatTimeInput(block.startAt),
             endDate: formatDateInput(block.endAt),
             endTime: formatTimeInput(block.endAt),
-            importance: block.importance,
+            importance: block.importance as 'Low' | 'Medium' | 'High',
             description: block.description || '',
             notes: block.notes || '',
             projectId: block.projectId || '',

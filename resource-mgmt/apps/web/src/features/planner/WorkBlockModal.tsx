@@ -17,16 +17,7 @@ const workBlockSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format'),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in HH:mm format'),
   importance: z.enum(['Low', 'Medium', 'High']),
-  description: z.string().superRefine((val, ctx) => {
-    const trimmed = val.trim()
-    if (trimmed.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Task description is required',
-        path: ['description'],
-      })
-    }
-  }),
+  description: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
   projectId: z.string().uuid().optional().or(z.literal('')),
   taskId: z.string().uuid().optional().or(z.literal('')),
@@ -285,7 +276,7 @@ export function WorkBlockModal({
         />
 
         <Textarea
-          label={`${t('planner.taskDescription')} *`}
+          label={t('planner.taskDescription')}
           {...register('description')}
           error={errors.description?.message}
           rows={3}

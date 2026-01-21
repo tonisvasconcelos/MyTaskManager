@@ -12,7 +12,6 @@ import type { WorkBlock } from '../shared/types/api'
 import { getUserToken } from '../shared/api/client'
 import { addDays, differenceInCalendarDays, startOfDay } from 'date-fns'
 
-const SNAP_INTERVAL = 15 // minutes
 const RESOURCE_COL_WIDTH = 260 // keep in sync with CapacityWeekGrid
 
 export function PlannerPage() {

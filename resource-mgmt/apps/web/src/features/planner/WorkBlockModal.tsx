@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useEffect } from 'react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -16,7 +17,16 @@ const workBlockSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format'),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in HH:mm format'),
   importance: z.enum(['Low', 'Medium', 'High']),
-  description: z.preprocess((val) => (typeof val === 'string' ? val.trim() : val), z.string().min(1, 'Task description is required')),
+  description: z.string().superRefine((val, ctx) => {
+    const trimmed = val.trim()
+    if (trimmed.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Task description is required',
+        path: ['description'],
+      })
+    }
+  }),
   notes: z.string().optional().or(z.literal('')),
   projectId: z.string().uuid().optional().or(z.literal('')),
   taskId: z.string().uuid().optional().or(z.literal('')),
@@ -75,7 +85,7 @@ export function WorkBlockModal({
     watch,
   } = useForm<WorkBlockFormData>({
     resolver: zodResolver(workBlockSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
     defaultValues: block
       ? {
@@ -113,6 +123,48 @@ export function WorkBlockModal({
             taskId: '',
           },
   })
+
+  // Reset form when modal opens/closes or block changes
+  useEffect(() => {
+    if (isOpen) {
+      const defaultValues = block
+        ? {
+            startDate: formatDateInput(block.startAt),
+            startTime: formatTimeInput(block.startAt),
+            endDate: formatDateInput(block.endAt),
+            endTime: formatTimeInput(block.endAt),
+            importance: block.importance,
+            description: block.description || '',
+            notes: block.notes || '',
+            projectId: block.projectId || '',
+            taskId: block.taskId || '',
+          }
+        : defaultStart && defaultEnd
+          ? {
+              startDate: formatDateInput(defaultStart),
+              startTime: formatTimeInput(defaultStart),
+              endDate: formatDateInput(defaultEnd),
+              endTime: formatTimeInput(defaultEnd),
+              importance: 'Medium',
+              description: '',
+              notes: '',
+              projectId: '',
+              taskId: '',
+            }
+          : {
+              startDate: '',
+              startTime: '',
+              endDate: '',
+              endTime: '',
+              importance: 'Medium',
+              description: '',
+              notes: '',
+              projectId: '',
+              taskId: '',
+            }
+      reset(defaultValues)
+    }
+  }, [isOpen, block, defaultStart, defaultEnd, reset])
 
   const selectedProjectId = watch('projectId')
   const filteredTasks = selectedProjectId

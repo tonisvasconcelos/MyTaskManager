@@ -10,8 +10,6 @@ import { Textarea } from '../../components/ui/Textarea'
 import type { WorkBlock, WorkBlockImportance } from '../../shared/types/api'
 import { parseISO, format } from 'date-fns'
 
-const SNAP_INTERVAL = 15 // minutes
-
 const workBlockSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format'),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in HH:mm format'),
@@ -197,7 +195,6 @@ export function WorkBlockModal({
             <Input
               label={`${t('planner.startTime')} *`}
               type="time"
-              step={SNAP_INTERVAL * 60}
               {...register('startTime')}
               error={errors.startTime?.message}
             />
@@ -212,7 +209,6 @@ export function WorkBlockModal({
             <Input
               label={`${t('planner.endTime')} *`}
               type="time"
-              step={SNAP_INTERVAL * 60}
               {...register('endTime')}
               error={errors.endTime?.message}
             />

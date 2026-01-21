@@ -90,7 +90,7 @@ export function ProjectDetailPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   
   // Initialize selectedUserIds when projectUsers loads
-  useMemo(() => {
+  useEffect(() => {
     if (projectUsers) {
       setSelectedUserIds(new Set(projectUsers.map((u) => u.id)))
       setHasUnsavedChanges(false)
@@ -122,6 +122,13 @@ export function ProjectDetailPage() {
       billable: 'Billable',
     },
   })
+
+  // Calculate time summary range - must be before early returns
+  const summaryWeekRange = getWeekRange(timeSummaryWeek)
+  const summaryFrom = summaryWeekRange.start.toISOString().split('T')[0]
+  const summaryTo = summaryWeekRange.end.toISOString().split('T')[0]
+  const timeSummaryQuery = useProjectTimeSummary(id || '', { from: summaryFrom, to: summaryTo })
+  const timeSummary = timeSummaryQuery.data
 
   const tasks = tasksData?.data || []
   const tasksByStatus = statusColumns.reduce((acc, col) => {
@@ -185,12 +192,6 @@ export function ProjectDetailPage() {
       </div>
     )
   }
-
-  const summaryWeekRange = getWeekRange(timeSummaryWeek)
-  const summaryFrom = summaryWeekRange.start.toISOString().split('T')[0]
-  const summaryTo = summaryWeekRange.end.toISOString().split('T')[0]
-  const timeSummaryQuery = useProjectTimeSummary(id || '', { from: summaryFrom, to: summaryTo })
-  const timeSummary = timeSummaryQuery.data
 
   return (
     <div>

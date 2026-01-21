@@ -266,6 +266,8 @@ export type WorkBlockType = 'Planned' | 'Meeting' | 'Focus' | 'Admin' | 'Break'
 
 export type WorkBlockStatus = 'Planned' | 'Confirmed' | 'Completed' | 'Cancelled'
 
+export type WorkBlockImportance = 'Low' | 'Medium' | 'High'
+
 export interface WorkBlock {
   id: string
   tenantId: string
@@ -274,7 +276,9 @@ export interface WorkBlock {
   taskId: string | null
   type: WorkBlockType
   status: WorkBlockStatus
+  importance: WorkBlockImportance
   title: string
+  description: string | null
   notes: string | null
   location: string | null
   startAt: string
@@ -307,4 +311,22 @@ export interface PlannerLookups {
   projects: Array<{ id: string; name: string }>
   tasks: Array<{ id: string; title: string; projectId: string; status: string }>
   users: Array<{ id: string; fullName: string }>
+}
+
+export interface ProjectTimeSummaryResponse {
+  projectId: string
+  from?: string
+  to?: string
+  planned: {
+    totalHours: number
+    totalsPerDay: Record<string, number>
+    totalsPerUser: Record<string, number>
+    entries: WorkBlock[]
+  }
+  reported: {
+    totalHours: number
+    totalsPerDay: Record<string, number>
+    totalsPerUser: Record<string, number>
+    entries: TimeEntry[]
+  }
 }

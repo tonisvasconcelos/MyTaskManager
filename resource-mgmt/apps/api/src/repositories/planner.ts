@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma.js';
-import { WorkBlockStatus, WorkBlockType } from '@prisma/client';
+import { WorkBlockImportance, WorkBlockStatus, WorkBlockType } from '@prisma/client';
 import type { WorkBlock, Prisma } from '@prisma/client';
 
 export interface WorkBlockFilters {
@@ -115,6 +115,8 @@ export async function createBlock(
     endAt: Date;
     type?: WorkBlockType;
     status?: WorkBlockStatus;
+    importance?: WorkBlockImportance;
+    description?: string | null;
     notes?: string | null;
     location?: string | null;
     projectId?: string | null;

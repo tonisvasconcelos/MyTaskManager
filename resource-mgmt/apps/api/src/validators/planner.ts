@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WorkBlockType, WorkBlockStatus } from '@prisma/client';
+import { WorkBlockType, WorkBlockStatus, WorkBlockImportance } from '@prisma/client';
 
 export const getBlocksSchema = z.object({
   query: z.object({
@@ -19,6 +19,8 @@ export const createBlockSchema = z.object({
     endAt: z.string().datetime('Invalid end date'),
     type: z.nativeEnum(WorkBlockType).optional(),
     status: z.nativeEnum(WorkBlockStatus).optional(),
+    importance: z.nativeEnum(WorkBlockImportance).optional(),
+    description: z.string().optional().or(z.null()),
     notes: z.string().optional().or(z.null()),
     location: z.string().optional().or(z.null()),
     projectId: z.string().uuid('Invalid project ID').optional().or(z.null()),
@@ -44,6 +46,8 @@ export const updateBlockSchema = z.object({
     endAt: z.string().datetime('Invalid end date').optional(),
     type: z.nativeEnum(WorkBlockType).optional(),
     status: z.nativeEnum(WorkBlockStatus).optional(),
+    importance: z.nativeEnum(WorkBlockImportance).optional(),
+    description: z.string().optional().or(z.null()),
     notes: z.string().optional().or(z.null()),
     location: z.string().optional().or(z.null()),
     projectId: z.string().uuid('Invalid project ID').optional().or(z.null()),

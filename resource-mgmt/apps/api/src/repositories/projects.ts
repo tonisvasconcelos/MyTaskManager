@@ -174,3 +174,128 @@ export async function projectHasTasks(tenantId: string, id: string): Promise<boo
   const count = await prisma.task.count({ where: { tenantId, projectId: id } });
   return count > 0;
 }
+
+export async function getProjectTimeSummary(
+  tenantId: string,
+  projectId: string,
+  filters: { from?: string; to?: string; userId?: string }
+): Promise<{
+  projectId: string;
+  from?: string;
+  to?: string;
+  planned: {
+    totalHours: number;
+    totalsPerDay: Record<string, number>;
+    totalsPerUser: Record<string, number>;
+    entries: any[];
+  };
+  reported: {
+    totalHours: number;
+    totalsPerDay: Record<string, number>;
+    totalsPerUser: Record<string, number>;
+    entries: any[];
+  };
+}> {
+  const { from, to, userId } = filters;
+
+  const rangeStart = from ? new Date(from) : undefined;
+  const rangeEndExclusive = to ? addDaysUTC(new Date(to), 1) : undefined;
+
+  const [plannedEntries, reportedEntries] = await Promise.all([
+    prisma.workBlock.findMany({
+      where: {
+        tenantId,
+        projectId,
+        ...(userId && { userId }),
+        ...(rangeStart && rangeEndExclusive && {
+          AND: [{ startAt: { lt: rangeEndExclusive } }, { endAt: { gt: rangeStart } }],
+        }),
+        ...(rangeStart && !rangeEndExclusive && { endAt: { gt: rangeStart } }),
+        ...(!rangeStart && rangeEndExclusive && { startAt: { lt: rangeEndExclusive } }),
+      },
+      include: {
+        project: { select: { id: true, name: true } },
+        task: { select: { id: true, title: true, status: true } },
+        user: { select: { id: true, fullName: true, email: true } },
+      },
+      orderBy: { startAt: 'asc' },
+    }),
+    prisma.timeEntry.findMany({
+      where: {
+        tenantId,
+        ...(userId && { userId }),
+        ...(rangeStart || rangeEndExclusive
+          ? {
+              entryDate: {
+                ...(rangeStart && { gte: rangeStart }),
+                ...(rangeEndExclusive && { lt: rangeEndExclusive }),
+              },
+            }
+          : {}),
+        task: { projectId },
+      },
+      include: {
+        task: {
+          include: {
+            project: {
+              include: {
+                company: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+        user: { select: { id: true, fullName: true, email: true } },
+      },
+      orderBy: { entryDate: 'asc' },
+    }),
+  ]);
+
+  const plannedTotalsPerDay: Record<string, number> = {};
+  const plannedTotalsPerUser: Record<string, number> = {};
+  let plannedTotalHours = 0;
+
+  for (const entry of plannedEntries as any[]) {
+    const dayKey = entry.startAt.toISOString().split('T')[0];
+    const minutes = Math.max(0, Math.round((entry.endAt.getTime() - entry.startAt.getTime()) / 60000));
+    const hours = minutes / 60;
+    plannedTotalsPerDay[dayKey] = (plannedTotalsPerDay[dayKey] || 0) + hours;
+    plannedTotalsPerUser[entry.userId] = (plannedTotalsPerUser[entry.userId] || 0) + hours;
+    plannedTotalHours += hours;
+  }
+
+  const reportedTotalsPerDay: Record<string, number> = {};
+  const reportedTotalsPerUser: Record<string, number> = {};
+  let reportedTotalHours = 0;
+
+  for (const entry of reportedEntries as any[]) {
+    const dayKey = entry.entryDate.toISOString().split('T')[0];
+    const hours = Number(entry.hours);
+    reportedTotalsPerDay[dayKey] = (reportedTotalsPerDay[dayKey] || 0) + hours;
+    reportedTotalsPerUser[entry.userId] = (reportedTotalsPerUser[entry.userId] || 0) + hours;
+    reportedTotalHours += hours;
+  }
+
+  return {
+    projectId,
+    from,
+    to,
+    planned: {
+      totalHours: plannedTotalHours,
+      totalsPerDay: plannedTotalsPerDay,
+      totalsPerUser: plannedTotalsPerUser,
+      entries: plannedEntries as any[],
+    },
+    reported: {
+      totalHours: reportedTotalHours,
+      totalsPerDay: reportedTotalsPerDay,
+      totalsPerUser: reportedTotalsPerUser,
+      entries: reportedEntries as any[],
+    },
+  };
+}
+
+function addDaysUTC(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}

@@ -135,7 +135,13 @@
     "task": "Tarefa",
     "actions": "Ações",
     "noTasksFound": "Nenhuma tarefa encontrada",
-    "changeStatus": "Alterar status"
+    "changeStatus": "Alterar status",
+    "plannedHours": "Horas planejadas",
+    "reportedHours": "Horas reportadas",
+    "variance": "Variação",
+    "byResource": "Por recurso",
+    "planningEntries": "Entradas de planejamento",
+    "timesheetEntries": "Entradas do registro de horas"
   },
   "tasks": {
     "title": "Tarefas",
@@ -350,8 +356,18 @@
     "editBlock": "Editar Bloco",
     "deleteConfirm": "Tem certeza que deseja excluir este bloco de trabalho?",
     "blockTitle": "Título",
+    "startDate": "Data de Início",
     "startTime": "Hora de Início",
+    "endDate": "Data de Término",
     "endTime": "Hora de Término",
+    "totalTime": "Tempo Total",
+    "taskDescription": "Descrição da tarefa",
+    "importance": {
+      "label": "Importância",
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta"
+    },
     "type": "Tipo",
     "status": "Status",
     "project": "Projeto",

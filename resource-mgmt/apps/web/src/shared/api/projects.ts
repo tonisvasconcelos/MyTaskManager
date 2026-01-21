@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from './client'
-import type { Project, PaginationResult, PaginationParams, User } from '../types/api'
+import type { Project, PaginationResult, PaginationParams, User, ProjectTimeSummaryResponse } from '../types/api'
 
 export function useProjects(
   params?: PaginationParams & { search?: string; companyId?: string; status?: string }
@@ -69,5 +69,13 @@ export function useUpdateProjectUsers() {
       queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId, 'users'] })
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
+  })
+}
+
+export function useProjectTimeSummary(projectId: string, params?: { from?: string; to?: string; userId?: string }) {
+  return useQuery({
+    queryKey: ['projects', projectId, 'time-summary', params],
+    queryFn: () => apiClient.get<ProjectTimeSummaryResponse>(`/projects/${projectId}/time-summary`, params),
+    enabled: !!projectId,
   })
 }

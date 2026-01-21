@@ -9,12 +9,14 @@ import {
   deleteProjectSchema,
   getProjectUsersSchema,
   updateProjectUsersSchema,
+  getProjectTimeSummarySchema,
 } from '../validators/projects.js';
 
 export const projectsRouter = Router();
 
 projectsRouter.get('/', projectsController.getProjects);
 projectsRouter.get('/:id/expenses', validateRequest(getProjectSchema), projectsController.getProjectExpenses);
+projectsRouter.get('/:id/time-summary', validateRequest(getProjectTimeSummarySchema), projectsController.getProjectTimeSummary);
 projectsRouter.get('/:id/users', validateRequest(getProjectUsersSchema), requireAdminOrManager, projectsController.getProjectUsers);
 projectsRouter.get('/:id', validateRequest(getProjectSchema), projectsController.getProject);
 projectsRouter.post('/', validateRequest(createProjectSchema), projectsController.createProject);

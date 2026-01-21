@@ -1,22 +1,19 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePlannerBlocks, useCreatePlannerBlock, useUpdatePlannerBlock, useDeletePlannerBlock, usePlannerLookups } from '../shared/api/planner'
 import { useUsers } from '../shared/api/users'
 import { PlannerToolbar } from '../features/planner/PlannerToolbar'
-import { WeekGrid } from '../features/planner/WeekGrid'
+import { CapacityWeekGrid } from '../features/planner/CapacityWeekGrid'
 import { WorkBlockModal } from '../features/planner/WorkBlockModal'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
-import { getWeekRange, roundToInterval, addMinutes, createDateTime } from '../features/planner/utils/date'
+import { getWeekRange, roundToInterval, addMinutes } from '../features/planner/utils/date'
 import type { WorkBlock } from '../shared/types/api'
 import { getUserToken } from '../shared/api/client'
+import { addDays, differenceInCalendarDays, startOfDay } from 'date-fns'
 
-
-const START_HOUR = 6
-const END_HOUR = 22
-const HOUR_HEIGHT = 60 // pixels per hour
 const SNAP_INTERVAL = 15 // minutes
-const HEADER_HEIGHT = 60 // px (must match WeekGrid header height)
+const RESOURCE_COL_WIDTH = 260 // keep in sync with CapacityWeekGrid
 
 export function PlannerPage() {
   const { t } = useTranslation()
@@ -32,17 +29,19 @@ export function PlannerPage() {
 
   // Drag and resize state
   const [draggingBlock, setDraggingBlock] = useState<WorkBlock | null>(null)
-  const [resizingBlock, setResizingBlock] = useState<{ block: WorkBlock; side: 'top' | 'bottom' } | null>(null)
-  const dragStartPos = useRef<{ x: number; y: number; startTime: Date } | null>(null)
+  const dragStartPos = useRef<{ x: number; y: number; startDay: Date } | null>(null)
+  const dragDidMove = useRef(false)
   const [previewOverrides, setPreviewOverrides] = useState<Record<string, { startAt: string; endAt: string }>>({})
 
   // Get user role from token (simple decode without library)
   const token = getUserToken()
   let userRole: 'Admin' | 'Manager' | 'Contributor' | 'SuperAdmin' = 'Contributor'
+  let currentUserId: string | undefined
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
       userRole = payload.role || 'Contributor'
+      currentUserId = payload.userId
     } catch {
       // Fallback to Contributor
     }
@@ -53,7 +52,7 @@ export function PlannerPage() {
   const { data: blocks = [], isLoading: blocksLoading } = usePlannerBlocks({
     start: weekRange.start.toISOString(),
     end: weekRange.end.toISOString(),
-    userId: userFilter || undefined,
+    userId: showUserFilter ? (userFilter || undefined) : undefined,
     projectId: projectFilter || undefined,
     taskId: taskFilter || undefined,
     status: statusFilter || undefined,
@@ -66,11 +65,16 @@ export function PlannerPage() {
   const updateMutation = useUpdatePlannerBlock()
   const deleteMutation = useDeletePlannerBlock()
 
-  const timeZones = [
-    { label: 'Local', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-    { label: 'BR', timeZone: 'America/Sao_Paulo' },
-  ]
-  const timeGutterWidth = timeZones.length * 50 + 20 // keep in sync with WeekGrid gutter width
+  const displayedUsers = useMemo(() => {
+    if (!users) return []
+    if (userRole === 'Contributor' && currentUserId) {
+      return users.filter((u) => u.id === currentUserId)
+    }
+    if (showUserFilter && userFilter) {
+      return users.filter((u) => u.id === userFilter)
+    }
+    return users
+  }, [users, userRole, currentUserId, showUserFilter, userFilter])
 
   const handleNewBlock = () => {
     setSelectedBlock(null)
@@ -83,16 +87,11 @@ export function PlannerPage() {
   }
 
   const handleBlockClick = (block: WorkBlock) => {
+    if (dragDidMove.current) {
+      dragDidMove.current = false
+      return
+    }
     setSelectedBlock(block)
-    setIsModalOpen(true)
-  }
-
-  const handleEmptyClick = (date: Date, hour: number, minutes: number) => {
-    setSelectedBlock(null)
-    const start = createDateTime(date, hour, minutes)
-    const end = addMinutes(start, 60)
-    setModalDefaultStart(start)
-    setModalDefaultEnd(end)
     setIsModalOpen(true)
   }
 
@@ -109,118 +108,41 @@ export function PlannerPage() {
   }
 
   const computeDragTarget = useCallback(
-    (clientX: number, clientY: number, block: WorkBlock) => {
-      const gridElement = document.querySelector('[data-week-grid]') as HTMLElement | null
-      if (!gridElement) return null
+    (clientX: number, block: WorkBlock) => {
+      const gridElement = document.querySelector('[data-capacity-week-grid]') as HTMLElement | null
+      const inner = document.querySelector('[data-capacity-grid-inner]') as HTMLElement | null
+      if (!gridElement || !inner) return null
 
       const rect = gridElement.getBoundingClientRect()
       const x = clientX - rect.left
-      const y = clientY - rect.top
+      const contentX = x + gridElement.scrollLeft
 
-      const weekColumnsWidth = rect.width - timeGutterWidth
-      const dayWidth = weekColumnsWidth / 7
-      const dayIndex = Math.max(0, Math.min(6, Math.floor((x - timeGutterWidth) / dayWidth)))
+      const totalWidth = inner.scrollWidth
+      const dayWidth = (totalWidth - RESOURCE_COL_WIDTH) / 7
+      const dayIndex = Math.max(0, Math.min(6, Math.floor((contentX - RESOURCE_COL_WIDTH) / dayWidth)))
 
-      const startOfWeek = getWeekRange(currentWeek).start
-      const targetDay = new Date(startOfWeek.getTime() + dayIndex * 24 * 60 * 60 * 1000)
-
-      const gridMinutes = (END_HOUR - START_HOUR) * 60
-      const clampedY = Math.max(0, Math.min((END_HOUR - START_HOUR) * HOUR_HEIGHT, y - HEADER_HEIGHT))
-      const rawMinutesFromStart = (clampedY / HOUR_HEIGHT) * 60
-      const snappedMinutesFromStart = Math.round(rawMinutesFromStart / SNAP_INTERVAL) * SNAP_INTERVAL
+      const targetDay = addDays(getWeekRange(currentWeek).start, dayIndex)
 
       const originalStart = new Date(block.startAt)
       const originalEnd = new Date(block.endAt)
-      const durationMinutes = Math.max(SNAP_INTERVAL, Math.round((originalEnd.getTime() - originalStart.getTime()) / 60000))
+      const deltaDays = differenceInCalendarDays(startOfDay(targetDay), startOfDay(originalStart))
 
-      const maxStartMinutes = Math.max(0, gridMinutes - durationMinutes)
-      const boundedStartMinutes = Math.max(0, Math.min(maxStartMinutes, snappedMinutesFromStart))
-
-      const targetHours = Math.floor(boundedStartMinutes / 60)
-      const targetMins = boundedStartMinutes % 60
-
-      const newStart = new Date(targetDay)
-      newStart.setHours(START_HOUR + targetHours, targetMins, 0, 0)
-      const newEnd = new Date(newStart.getTime() + durationMinutes * 60 * 1000)
-
+      const newStart = addDays(originalStart, deltaDays)
+      const newEnd = addDays(originalEnd, deltaDays)
       return { newStart, newEnd }
     },
-    [currentWeek, timeGutterWidth]
-  )
-
-  // Resize functionality
-  const handleResizeMove = useCallback(
-    (e: PointerEvent) => {
-      if (!resizingBlock || !dragStartPos.current) return
-
-      const deltaY = e.clientY - dragStartPos.current.y
-      const deltaMinutes = Math.round((deltaY / HOUR_HEIGHT) * 60)
-      const snappedMinutes = Math.round(deltaMinutes / SNAP_INTERVAL) * SNAP_INTERVAL
-
-      const originalStart = new Date(resizingBlock.block.startAt)
-      const originalEnd = new Date(resizingBlock.block.endAt)
-
-      let newStart = originalStart
-      let newEnd = originalEnd
-
-      if (resizingBlock.side === 'top') {
-        newStart = roundToInterval(addMinutes(originalStart, snappedMinutes), SNAP_INTERVAL)
-        if (newStart >= originalEnd) {
-          newStart = addMinutes(originalEnd, -SNAP_INTERVAL)
-        }
-      } else {
-        newEnd = roundToInterval(addMinutes(originalEnd, snappedMinutes), SNAP_INTERVAL)
-        if (newEnd <= originalStart) {
-          newEnd = addMinutes(originalStart, SNAP_INTERVAL)
-        }
-      }
-
-      setPreviewOverrides((prev) => ({
-        ...prev,
-        [resizingBlock.block.id]: { startAt: newStart.toISOString(), endAt: newEnd.toISOString() },
-      }))
-    },
-    [resizingBlock]
-  )
-
-  const handleResizeEnd = useCallback(
-    async (_e: PointerEvent) => {
-      if (!resizingBlock || !dragStartPos.current) {
-        setResizingBlock(null)
-        dragStartPos.current = null
-        return
-      }
-
-      const preview = previewOverrides[resizingBlock.block.id]
-      const newStart = preview ? new Date(preview.startAt) : new Date(resizingBlock.block.startAt)
-      const newEnd = preview ? new Date(preview.endAt) : new Date(resizingBlock.block.endAt)
-
-      await updateMutation.mutateAsync({
-        id: resizingBlock.block.id,
-        startAt: newStart.toISOString(),
-        endAt: newEnd.toISOString(),
-      })
-
-      setResizingBlock(null)
-      dragStartPos.current = null
-      setPreviewOverrides((prev) => {
-        const next = { ...prev }
-        delete next[resizingBlock.block.id]
-        return next
-      })
-    },
-    [previewOverrides, resizingBlock, updateMutation]
+    [currentWeek]
   )
 
   // Drag functionality
   const handleDragStart = useCallback((block: WorkBlock, e: React.PointerEvent) => {
     e.stopPropagation()
+    dragDidMove.current = false
     setDraggingBlock(block)
-    const startDate = new Date(block.startAt)
     dragStartPos.current = {
       x: e.clientX,
       y: e.clientY,
-      startTime: startDate,
+      startDay: startOfDay(new Date(block.startAt)),
     }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }, [])
@@ -228,7 +150,12 @@ export function PlannerPage() {
   const handlePointerMove = useCallback(
     (e: PointerEvent) => {
       if (!draggingBlock) return
-      const target = computeDragTarget(e.clientX, e.clientY, draggingBlock)
+      const moved = dragStartPos.current
+        ? Math.abs(e.clientX - dragStartPos.current.x) + Math.abs(e.clientY - dragStartPos.current.y)
+        : 0
+      if (moved > 4) dragDidMove.current = true
+
+      const target = computeDragTarget(e.clientX, draggingBlock)
       if (!target) return
       setPreviewOverrides((prev) => ({
         ...prev,
@@ -249,7 +176,7 @@ export function PlannerPage() {
       const preview = previewOverrides[draggingBlock.id]
       const target = preview
         ? { newStart: new Date(preview.startAt), newEnd: new Date(preview.endAt) }
-        : computeDragTarget(e.clientX, e.clientY, draggingBlock)
+        : computeDragTarget(e.clientX, draggingBlock)
 
       if (!target) {
         setDraggingBlock(null)
@@ -275,36 +202,15 @@ export function PlannerPage() {
     [computeDragTarget, draggingBlock, previewOverrides, updateMutation]
   )
 
-  // Resize functionality
-  const handleResizeStart = useCallback((block: WorkBlock, e: React.PointerEvent, side: 'top' | 'bottom') => {
-    e.stopPropagation()
-    setResizingBlock({ block, side })
-    const startDate = side === 'top' ? new Date(block.startAt) : new Date(block.endAt)
-    dragStartPos.current = {
-      x: e.clientX,
-      y: e.clientY,
-      startTime: startDate,
-    }
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-  }, [])
-
   // Attach global pointer event listeners
   useEffect(() => {
-    if (!draggingBlock && !resizingBlock) return
+    if (!draggingBlock) return
 
     const handleMove = (e: PointerEvent) => {
-      if (draggingBlock) {
-        handlePointerMove(e)
-      } else if (resizingBlock) {
-        handleResizeMove(e)
-      }
+      handlePointerMove(e)
     }
     const handleUp = (e: PointerEvent) => {
-      if (draggingBlock) {
-        handlePointerUp(e).catch(console.error)
-      } else if (resizingBlock) {
-        handleResizeEnd(e).catch(console.error)
-      }
+      handlePointerUp(e).catch(console.error)
     }
 
     document.addEventListener('pointermove', handleMove)
@@ -313,7 +219,7 @@ export function PlannerPage() {
       document.removeEventListener('pointermove', handleMove)
       document.removeEventListener('pointerup', handleUp)
     }
-  }, [draggingBlock, resizingBlock, handlePointerMove, handlePointerUp, handleResizeMove, handleResizeEnd])
+  }, [draggingBlock, handlePointerMove, handlePointerUp])
 
   const displayBlocks = blocks.map((b) => (previewOverrides[b.id] ? { ...b, ...previewOverrides[b.id] } : b))
 
@@ -341,28 +247,25 @@ export function PlannerPage() {
       />
 
       <Card>
-        <div data-week-grid data-header-height={HEADER_HEIGHT} data-gutter-width={timeGutterWidth} className="relative">
-          {blocksLoading ? (
-            <Skeleton className="h-96" />
-          ) : displayBlocks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-text-secondary mb-4">{t('planner.emptyState')}</p>
-            </div>
-          ) : (
-            <WeekGrid
+        {blocksLoading ? (
+          <Skeleton className="h-96" />
+        ) : (
+          <div className="relative">
+            <CapacityWeekGrid
               currentWeek={currentWeek}
+              users={displayedUsers}
               blocks={displayBlocks}
-              startHour={START_HOUR}
-              endHour={END_HOUR}
-              hourHeight={HOUR_HEIGHT}
-              timeZones={timeZones}
+              isDraggingBlockId={draggingBlock?.id || null}
               onBlockClick={handleBlockClick}
-              onBlockDragStart={handleDragStart}
-              onBlockResizeStart={handleResizeStart}
-              onEmptyClick={handleEmptyClick}
+              onBlockPointerDown={(block, e) => handleDragStart(block, e)}
             />
-          )}
-        </div>
+            {displayedUsers.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-text-secondary mb-4">{t('common.noData')}</p>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <WorkBlockModal

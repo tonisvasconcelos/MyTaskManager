@@ -60,3 +60,14 @@ export const updateProjectUsersSchema = z.object({
     userIds: z.array(z.string().uuid()).default([]),
   }),
 });
+
+export const getProjectTimeSummarySchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  query: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid from date format. Use YYYY-MM-DD').optional(),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid to date format. Use YYYY-MM-DD').optional(),
+    userId: z.string().uuid('Invalid user ID').optional(),
+  }).optional(),
+});

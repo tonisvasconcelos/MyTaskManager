@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../shared/api/tasks'
-import { useProject, useProjectUsers, useUpdateProjectUsers } from '../shared/api/projects'
+import { useProject, useProjectUsers, useUpdateProjectUsers, useProjectTimeSummary } from '../shared/api/projects'
 import { useUsers } from '../shared/api/users'
 import { useProcurements } from '../shared/api/procurements'
 import { useMe } from '../shared/api/auth'
@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { Task } from '../shared/types/api'
+import { formatDateRange, getWeekRange } from '../features/planner/utils/date'
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -68,6 +69,7 @@ export function ProjectDetailPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTab, setActiveTab] = useState<'tasks' | 'timesheet' | 'expenses' | 'users'>('tasks')
+  const [timeSummaryWeek, setTimeSummaryWeek] = useState(new Date())
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>(() => {
     const saved = localStorage.getItem('projectTasksViewMode')
     return (saved === 'kanban' || saved === 'list') ? saved : 'kanban'
@@ -183,6 +185,12 @@ export function ProjectDetailPage() {
       </div>
     )
   }
+
+  const summaryWeekRange = getWeekRange(timeSummaryWeek)
+  const summaryFrom = summaryWeekRange.start.toISOString().split('T')[0]
+  const summaryTo = summaryWeekRange.end.toISOString().split('T')[0]
+  const timeSummaryQuery = useProjectTimeSummary(id || '', { from: summaryFrom, to: summaryTo })
+  const timeSummary = timeSummaryQuery.data
 
   return (
     <div>
@@ -366,9 +374,193 @@ export function ProjectDetailPage() {
       )}
 
       {activeTab === 'timesheet' && (
-        <Card>
-          <p className="text-text-secondary">{t('projectDetail.comingSoon')}</p>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setTimeSummaryWeek(new Date())}
+                >
+                  {t('planner.weekNavigation.today')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const d = new Date(timeSummaryWeek)
+                    d.setDate(d.getDate() - 7)
+                    setTimeSummaryWeek(d)
+                  }}
+                >
+                  ←
+                </Button>
+                <div className="text-sm font-semibold text-text-primary">
+                  {formatDateRange(summaryWeekRange.start, summaryWeekRange.end)}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const d = new Date(timeSummaryWeek)
+                    d.setDate(d.getDate() + 7)
+                    setTimeSummaryWeek(d)
+                  }}
+                >
+                  →
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {timeSummaryQuery.isLoading ? (
+            <Skeleton className="h-64" />
+          ) : timeSummary ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <div className="text-sm text-text-secondary">{t('projectDetail.plannedHours')}</div>
+                  <div className="text-2xl font-bold text-text-primary">{timeSummary.planned.totalHours.toFixed(1)}h</div>
+                </Card>
+                <Card>
+                  <div className="text-sm text-text-secondary">{t('projectDetail.reportedHours')}</div>
+                  <div className="text-2xl font-bold text-text-primary">{timeSummary.reported.totalHours.toFixed(1)}h</div>
+                </Card>
+                <Card>
+                  <div className="text-sm text-text-secondary">{t('projectDetail.variance')}</div>
+                  <div
+                    className={`text-2xl font-bold ${
+                      timeSummary.reported.totalHours - timeSummary.planned.totalHours >= 0 ? 'text-success' : 'text-danger'
+                    }`}
+                  >
+                    {(timeSummary.reported.totalHours - timeSummary.planned.totalHours).toFixed(1)}h
+                  </div>
+                </Card>
+              </div>
+
+              <Card>
+                <h3 className="text-lg font-semibold text-text-primary mb-3">{t('projectDetail.byResource')}</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.user')}</th>
+                        <th className="text-right py-2 text-text-secondary font-medium">{t('projectDetail.plannedHours')}</th>
+                        <th className="text-right py-2 text-text-secondary font-medium">{t('projectDetail.reportedHours')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getUserIdsFromSummary(timeSummary).map((userId) => {
+                        const user = users?.find((u) => u.id === userId)
+                        const planned = timeSummary.planned.totalsPerUser[userId] || 0
+                        const reported = timeSummary.reported.totalsPerUser[userId] || 0
+                        return (
+                          <tr key={userId} className="border-b border-border">
+                            <td className="py-2 text-text-primary">{user?.fullName || userId}</td>
+                            <td className="py-2 text-right text-text-primary">{planned.toFixed(1)}h</td>
+                            <td className="py-2 text-right text-text-primary">{reported.toFixed(1)}h</td>
+                          </tr>
+                        )
+                      })}
+                      {getUserIdsFromSummary(timeSummary).length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="py-6 text-center text-text-secondary">
+                            {t('common.noData')}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+
+              <Card>
+                <h3 className="text-lg font-semibold text-text-primary mb-3">{t('projectDetail.planningEntries')}</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.date')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('planner.startTime')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('planner.endTime')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('planner.taskDescription')}</th>
+                        <th className="text-right py-2 text-text-secondary font-medium">{t('timesheet.hours')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.user')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeSummary.planned.entries.map((entry) => {
+                        const start = new Date(entry.startAt)
+                        const end = new Date(entry.endAt)
+                        const hours = Math.max(0, (end.getTime() - start.getTime()) / 3600000)
+                        return (
+                          <tr key={entry.id} className="border-b border-border">
+                            <td className="py-2 text-text-primary">{start.toLocaleDateString()}</td>
+                            <td className="py-2 text-text-primary">{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td className="py-2 text-text-primary">{end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td className="py-2 text-text-primary">
+                              <div className="font-medium">{entry.title}</div>
+                              {entry.description && <div className="text-xs text-text-secondary">{entry.description}</div>}
+                            </td>
+                            <td className="py-2 text-right text-text-primary">{hours.toFixed(1)}h</td>
+                            <td className="py-2 text-text-primary">{entry.user?.fullName || entry.userId}</td>
+                          </tr>
+                        )
+                      })}
+                      {timeSummary.planned.entries.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-6 text-center text-text-secondary">
+                            {t('common.noData')}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+
+              <Card>
+                <h3 className="text-lg font-semibold text-text-primary mb-3">{t('projectDetail.timesheetEntries')}</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.date')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.task')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.user')}</th>
+                        <th className="text-right py-2 text-text-secondary font-medium">{t('timesheet.hours')}</th>
+                        <th className="text-left py-2 text-text-secondary font-medium">{t('timesheet.notes')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeSummary.reported.entries.map((entry) => (
+                        <tr key={entry.id} className="border-b border-border">
+                          <td className="py-2 text-text-primary">{new Date(entry.entryDate).toLocaleDateString()}</td>
+                          <td className="py-2 text-text-primary">{entry.task?.title || entry.taskId}</td>
+                          <td className="py-2 text-text-primary">{entry.user?.fullName || entry.userId}</td>
+                          <td className="py-2 text-right text-text-primary">{Number(entry.hours).toFixed(1)}h</td>
+                          <td className="py-2 text-text-secondary text-sm max-w-xs truncate">{entry.notes || '-'}</td>
+                        </tr>
+                      ))}
+                      {timeSummary.reported.entries.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-6 text-center text-text-secondary">
+                            {t('common.noData')}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <p className="text-text-secondary">{t('common.noData')}</p>
+            </Card>
+          )}
+        </div>
       )}
 
       {activeTab === 'expenses' && (
@@ -680,4 +872,11 @@ export function ProjectDetailPage() {
       )}
     </div>
   )
+}
+
+function getUserIdsFromSummary(summary: any): string[] {
+  const ids = new Set<string>()
+  Object.keys(summary?.planned?.totalsPerUser || {}).forEach((id) => ids.add(id))
+  Object.keys(summary?.reported?.totalsPerUser || {}).forEach((id) => ids.add(id))
+  return Array.from(ids).sort()
 }

@@ -135,7 +135,13 @@
     "task": "Task",
     "actions": "Actions",
     "noTasksFound": "No tasks found",
-    "changeStatus": "Change status"
+    "changeStatus": "Change status",
+    "plannedHours": "Planned hours",
+    "reportedHours": "Reported hours",
+    "variance": "Variance",
+    "byResource": "By resource",
+    "planningEntries": "Planning entries",
+    "timesheetEntries": "Timesheet entries"
   },
   "tasks": {
     "title": "Tasks",
@@ -351,8 +357,18 @@
     "editBlock": "Edit Block",
     "deleteConfirm": "Are you sure you want to delete this work block?",
     "blockTitle": "Title",
+    "startDate": "Start Date",
     "startTime": "Start Time",
+    "endDate": "End Date",
     "endTime": "End Time",
+    "totalTime": "Total Time",
+    "taskDescription": "Task Description",
+    "importance": {
+      "label": "Importance",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "type": "Type",
     "status": "Status",
     "project": "Project",

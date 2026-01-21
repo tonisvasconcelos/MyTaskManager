@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as projectRepo from '../repositories/projects.js';
+import { getProjectTimeSummary as getProjectTimeSummaryRepo } from '../repositories/projects.js';
 import * as procurementRepo from '../repositories/procurements.js';
 import * as projectUserRepo from '../repositories/projectUsers.js';
 import * as userRepo from '../repositories/users.js';
@@ -168,6 +169,41 @@ export async function getProjectExpenses(req: Request, res: Response, next: Next
     
     const expenses = await procurementRepo.findExpensesByProject(tenantId, id);
     res.json(expenses);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getProjectTimeSummary(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const tenantId = req.tenantId!;
+    const auth = req.auth!;
+    const role = auth.role;
+    const { from, to, userId } = req.query as Record<string, string | undefined>;
+
+    const exists = await projectRepo.projectExistsForTenant(tenantId, id);
+    if (!exists) {
+      throw new NotFoundError('Project', id);
+    }
+
+    // If user is Contributor, check if they have access to this project
+    if (role === 'Contributor') {
+      const hasAccess = await projectUserRepo.userHasProjectAccess(auth.userId, id);
+      if (!hasAccess) {
+        throw new ValidationError('You do not have access to this project');
+      }
+    }
+
+    const effectiveUserId = role === 'Contributor' ? auth.userId : userId;
+
+    const summary = await getProjectTimeSummaryRepo(tenantId, id, {
+      from,
+      to,
+      userId: effectiveUserId,
+    });
+
+    res.json(summary);
   } catch (error) {
     next(error);
   }

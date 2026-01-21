@@ -100,6 +100,12 @@ enum WorkBlockStatus {
   Cancelled
 }
 
+enum WorkBlockImportance {
+  Low
+  Medium
+  High
+}
+
 model Company {
   id                    String       @id @default(uuid())
   tenantId              String
@@ -374,7 +380,9 @@ model WorkBlock {
   taskId    String?
   type      WorkBlockType   @default(Planned)
   status    WorkBlockStatus @default(Planned)
+  importance WorkBlockImportance @default(Medium)
   title     String
+  description String?       @db.Text
   notes     String?         @db.Text
   location  String?
   startAt   DateTime

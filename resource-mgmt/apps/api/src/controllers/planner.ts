@@ -81,6 +81,8 @@ export async function createBlock(req: Request, res: Response, next: NextFunctio
       endAt: new Date(data.endAt),
       type: data.type || 'Planned',
       status: data.status || 'Planned',
+      importance: data.importance || 'Medium',
+      description: data.description || null,
       notes: data.notes || null,
       location: data.location || null,
       projectId: data.projectId || null,
@@ -143,6 +145,8 @@ export async function updateBlock(req: Request, res: Response, next: NextFunctio
     if (data.endAt !== undefined) updateData.endAt = new Date(data.endAt);
     if (data.type !== undefined) updateData.type = data.type;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.importance !== undefined) updateData.importance = data.importance;
+    if (data.description !== undefined) updateData.description = data.description || null;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
     if (data.location !== undefined) updateData.location = data.location || null;
     if (data.projectId !== undefined) {
